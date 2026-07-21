@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
     <title>Roma - Мессенджер с профилями</title>
     <style>
+        /* ... все стили остаются без изменений ... */
         * {
             margin: 0;
             padding: 0;
@@ -651,6 +652,7 @@
             display: flex;
             gap: 10px;
             margin-top: 20px;
+            flex-wrap: wrap;
         }
 
         .profile-modal .profile-actions button {
@@ -661,6 +663,7 @@
             font-weight: 600;
             cursor: pointer;
             transition: all 0.2s ease;
+            min-width: 60px;
         }
 
         .profile-modal .profile-actions button:hover {
@@ -683,7 +686,6 @@
             color: #2c3e50;
         }
 
-        /* Gallery Styles */
         .gallery-header {
             padding: 20px 30px;
             background: white;
@@ -780,7 +782,6 @@
             color: #7f8c8d;
         }
 
-        /* Profile Styles */
         .profile-content {
             padding: 30px;
             overflow-y: auto;
@@ -832,7 +833,6 @@
             font-size: 16px;
         }
 
-        /* Modal Styles */
         .modal {
             display: none;
             position: fixed;
@@ -1163,7 +1163,7 @@
             <div id="privateView" class="view">
                 <div class="chat-header">
                     <button class="back-btn" onclick="showView('private')">←</button>
-                    <div class="chat-info" onclick="openUserProfile(privateChatWith)">
+                    <div class="chat-info" onclick="openUserProfileFromChat()">
                         <img id="privateAvatar" src="" alt="">
                         <span class="name" id="privateUserName">Выберите пользователя</span>
                     </div>
@@ -1330,7 +1330,7 @@
         // 1. НАСТРОЙКИ FIREBASE
         // ================================================
         const firebaseConfig = {
-            apiKey: "AIzaSyDU3iCDKldEm-FrLtWbgaESeN1Pew6NOBg",
+         apiKey: "AIzaSyDU3iCDKldEm-FrLtWbgaESeN1Pew6NOBg",
             authDomain: "romamessenger-bbc6a.firebaseapp.com",
             databaseURL: "https://romamessenger-bbc6a-default-rtdb.firebaseio.com",
             projectId: "romamessenger-bbc6a",
@@ -1513,12 +1513,13 @@
         });
 
         // ================================================
-        // 6. ОТКРЫТИЕ ПРОФИЛЯ ПОЛЬЗОВАТЕЛЯ
+        // 6. ОТКРЫТИЕ ПРОФИЛЯ ПОЛЬЗОВАТЕЛЯ (ИСПРАВЛЕННОЕ)
         // ================================================
 
         window.openUserProfile = function(userId) {
+            // Проверяем, что userId передан
             if (!userId) {
-                showNotification('Пользователь не найден', 'error');
+                showNotification('Ошибка: пользователь не найден', 'error');
                 return;
             }
             
@@ -1581,13 +1582,26 @@
             document.getElementById('userProfileModal').classList.add('active');
         };
 
+        // Функция для открытия профиля из шапки чата
+        window.openUserProfileFromChat = function() {
+            if (privateChatWith) {
+                openUserProfile(privateChatWith);
+            } else {
+                showNotification('Нет выбранного пользователя', 'info');
+            }
+        };
+
         window.closeUserProfile = function() {
             document.getElementById('userProfileModal').classList.remove('active');
         };
 
         window.goToPrivateChat = function(userId) {
             closeUserProfile();
-            startPrivateChat(userId);
+            if (userId) {
+                startPrivateChat(userId);
+            } else {
+                showNotification('Ошибка: пользователь не найден', 'error');
+            }
         };
 
         // ================================================
@@ -1631,8 +1645,17 @@
         const privateMessagesRef = database.ref('privateMessages');
 
         function startPrivateChat(userId) {
+            // Проверяем, что userId передан
+            if (!userId) {
+                showNotification('Ошибка: пользователь не найден', 'error');
+                return;
+            }
+            
             const user = window.appUsers.find(u => u.id === userId);
-            if (!user) return;
+            if (!user) {
+                showNotification('Пользователь не найден', 'error');
+                return;
+            }
             
             privateChatWith = userId;
             document.getElementById('privateUserName').textContent = user.username;
@@ -1652,12 +1675,6 @@
             document.getElementById('searchUsers').value = '';
             document.getElementById('searchResults').innerHTML = '';
         }
-
-        // ================================================
-        // 9. ОСТАЛЬНЫЕ ФУНКЦИИ (ЧАТЫ, ЗВОНКИ, ГАЛЕРЕЯ)
-        // ================================================
-
-        // ... (все остальные функции остаются без изменений)
 
         function sendPrivateMessage(text, imageData = null) {
             if (!text.trim() && !imageData) return;
@@ -1752,12 +1769,15 @@
                         contentHtml += `<div class="message-text">${escapeHtml(msg.text)}</div>`;
                     }
                     
+                    // Проверяем, что from есть перед вызовом openUserProfile
+                    const userId = msg.from || '';
+                    
                     return `
                         <div class="message ${isOwn ? 'own' : ''}" data-key="${msg.firebaseKey}">
-                            <img src="${avatar}" alt="" class="message-avatar" onclick="openUserProfile('${msg.from}')">
+                            <img src="${avatar}" alt="" class="message-avatar" onclick="${userId ? `openUserProfile('${userId}')` : ''}">
                             <div class="message-content">
                                 <div class="message-header">
-                                    <span class="message-name" onclick="openUserProfile('${msg.from}')">${escapeHtml(msg.username)}</span>
+                                    <span class="message-name" onclick="${userId ? `openUserProfile('${userId}')` : ''}">${escapeHtml(msg.username)}</span>
                                     <span class="message-time">${formatTime(msg.timestamp)}</span>
                                 </div>
                                 ${contentHtml}
@@ -1791,7 +1811,7 @@
         }
 
         // ================================================
-        // 10. ОБЩИЙ ЧАТ
+        // 9. ОБЩИЙ ЧАТ
         // ================================================
 
         const chatMessagesRef = database.ref('chatMessages');
@@ -1859,12 +1879,14 @@
                     contentHtml += `<div class="message-text">${escapeHtml(msg.text)}</div>`;
                 }
                 
+                const userId = msg.userId || '';
+                
                 return `
                     <div class="message ${isOwn ? 'own' : ''}" data-key="${msg.firebaseKey}">
-                        <img src="${avatar}" alt="${msg.username}" class="message-avatar" onclick="openUserProfile('${msg.userId}')">
+                        <img src="${avatar}" alt="${msg.username}" class="message-avatar" onclick="${userId ? `openUserProfile('${userId}')` : ''}">
                         <div class="message-content">
                             <div class="message-header">
-                                <span class="message-name" onclick="openUserProfile('${msg.userId}')">${escapeHtml(msg.username)}</span>
+                                <span class="message-name" onclick="${userId ? `openUserProfile('${userId}')` : ''}">${escapeHtml(msg.username)}</span>
                                 <span class="message-time">${formatTime(msg.timestamp)}</span>
                             </div>
                             ${contentHtml}
@@ -1919,7 +1941,7 @@
         }
 
         // ================================================
-        // 11. СИСТЕМА ЗВОНКОВ (WebRTC)
+        // 10. СИСТЕМА ЗВОНКОВ (WebRTC)
         // ================================================
 
         let peerConnection = null;
@@ -2169,7 +2191,7 @@
         }
 
         // ================================================
-        // 12. ГАЛЕРЕЯ
+        // 11. ГАЛЕРЕЯ
         // ================================================
 
         function renderGallery() {
@@ -2296,7 +2318,7 @@
         });
 
         // ================================================
-        // 13. НАВИГАЦИЯ
+        // 12. НАВИГАЦИЯ
         // ================================================
 
         function showView(viewId) {
@@ -2324,7 +2346,7 @@
         }
 
         // ================================================
-        // 14. ИНИЦИАЛИЗАЦИЯ
+        // 13. ИНИЦИАЛИЗАЦИЯ
         // ================================================
 
         function initEvents() {
@@ -2441,7 +2463,7 @@
         }
 
         // ================================================
-        // 15. ЗАПУСК
+        // 14. ЗАПУСК
         // ================================================
 
         document.addEventListener('DOMContentLoaded', function() {
