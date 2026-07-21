@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
     <title>Roma - Мессенджер с звонками и фото</title>
     <style>
+        /* ... все стили остаются без изменений ... */
         * {
             margin: 0;
             padding: 0;
@@ -25,7 +26,6 @@
             overflow: hidden;
         }
 
-        /* Sidebar */
         .sidebar {
             width: 280px;
             background: white;
@@ -129,7 +129,6 @@
             transform: translateY(-2px);
         }
 
-        /* Поиск пользователей */
         .search-users {
             padding: 10px 20px;
             border-bottom: 1px solid #e1e8ed;
@@ -157,6 +156,7 @@
             padding: 8px 20px;
             cursor: pointer;
             transition: all 0.2s ease;
+            border-radius: 8px;
         }
 
         .user-list-item:hover {
@@ -184,7 +184,6 @@
             color: #4caf50;
         }
 
-        /* Main Content */
         .main-content {
             flex: 1;
             display: flex;
@@ -203,7 +202,6 @@
             display: flex;
         }
 
-        /* Chat Styles */
         .chat-header {
             padding: 20px 30px;
             background: white;
@@ -469,7 +467,6 @@
             color: #1E88E5;
         }
 
-        /* Call Modal */
         .call-modal {
             position: fixed;
             top: 0;
@@ -571,7 +568,6 @@
             border: 2px solid #1E88E5;
         }
 
-        /* Gallery Styles */
         .gallery-header {
             padding: 20px 30px;
             background: white;
@@ -668,7 +664,6 @@
             color: #7f8c8d;
         }
 
-        /* Profile Styles */
         .profile-content {
             padding: 30px;
             overflow-y: auto;
@@ -720,7 +715,6 @@
             font-size: 16px;
         }
 
-        /* Modal Styles */
         .modal {
             display: none;
             position: fixed;
@@ -881,7 +875,6 @@
             margin: 0 auto;
         }
 
-        /* Notification */
         .notification {
             position: fixed;
             top: 20px;
@@ -907,7 +900,6 @@
             background: #1E88E5;
         }
 
-        /* Responsive */
         @media (max-width: 768px) {
             .sidebar {
                 position: fixed;
@@ -976,7 +968,6 @@
 </head>
 <body>
     <div id="app">
-        <!-- Боковая панель навигации -->
         <aside class="sidebar" id="sidebar">
             <div class="sidebar-header">
                 <h2>Roma</h2>
@@ -1008,7 +999,7 @@
             
             <div class="search-users">
                 <input type="text" id="searchUsers" placeholder="🔍 Найти пользователя..." oninput="searchUsers()">
-                <div id="searchResults" style="margin-top: 8px; max-height: 200px; overflow-y: auto;"></div>
+                <div id="searchResults" style="margin-top: 8px; max-height: 300px; overflow-y: auto;"></div>
             </div>
             
             <div class="sidebar-footer">
@@ -1019,17 +1010,21 @@
             </div>
         </aside>
 
-        <!-- Основное содержимое -->
         <main class="main-content">
             <!-- Общий чат -->
             <div id="chatView" class="view active">
                 <div class="chat-header">
                     <h2><i class="fas fa-globe"></i> Общий чат</h2>
-                    <p style="font-size: 12px; color: #999;">💡 Все пользователи видят сообщения</p>
+                    <div class="chat-actions">
+                        <button class="call-btn" onclick="startGroupCall('audio')" title="Аудиозвонок в общий чат">
+                            <i class="fas fa-phone"></i>
+                        </button>
+                        <button class="video-call-btn" onclick="startGroupCall('video')" title="Видеозвонок в общий чат">
+                            <i class="fas fa-video"></i>
+                        </button>
+                    </div>
                 </div>
-                <div class="chat-messages" id="chatMessages">
-                    <!-- Сообщения будут здесь -->
-                </div>
+                <div class="chat-messages" id="chatMessages"></div>
                 <div class="chat-input-area">
                     <input type="file" id="chatFileInput" accept="image/*" style="display: none;" onchange="sendChatImage(event)">
                     <button class="file-btn" onclick="document.getElementById('chatFileInput').click()">
@@ -1051,17 +1046,17 @@
                         <span class="name" id="privateUserName">Выберите пользователя</span>
                     </div>
                     <div class="chat-actions">
-                        <button class="call-btn" id="audioCallBtn" onclick="startCall('audio')" title="Аудиозвонок">
+                        <button class="call-btn" id="audioCallBtn" onclick="startPrivateCall('audio')" title="Аудиозвонок" style="display: none;">
                             <i class="fas fa-phone"></i>
                         </button>
-                        <button class="video-call-btn" id="videoCallBtn" onclick="startCall('video')" title="Видеозвонок">
+                        <button class="video-call-btn" id="videoCallBtn" onclick="startPrivateCall('video')" title="Видеозвонок" style="display: none;">
                             <i class="fas fa-video"></i>
                         </button>
                     </div>
                 </div>
                 <div class="chat-messages" id="privateMessages">
                     <div style="text-align:center; padding:40px; color:#999;">
-                        Выберите пользователя слева, чтобы начать общение 💬
+                        Найдите пользователя в поиске слева и начните общение 💬
                     </div>
                 </div>
                 <div class="chat-input-area">
@@ -1084,7 +1079,6 @@
                         <i class="fas fa-upload"></i> Загрузить
                     </button>
                 </div>
-                
                 <div class="gallery-controls">
                     <div class="sort-buttons">
                         <button class="sort-btn active" data-sort="newest">
@@ -1095,20 +1089,15 @@
                         </button>
                     </div>
                 </div>
-                
-                <div class="gallery-grid" id="galleryGrid">
-                    <!-- Картинки будут здесь -->
-                </div>
+                <div class="gallery-grid" id="galleryGrid"></div>
             </div>
 
-            <!-- Профиль пользователя -->
+            <!-- Профиль -->
             <div id="profileView" class="view">
                 <div class="profile-header">
                     <h2><i class="fas fa-user-circle"></i> Мой профиль</h2>
                 </div>
-                <div class="profile-content" id="profileContent">
-                    <!-- Данные профиля -->
-                </div>
+                <div class="profile-content" id="profileContent"></div>
             </div>
         </main>
     </div>
@@ -1120,7 +1109,7 @@
             <div class="name" id="callName">Имя</div>
             <div class="status" id="callStatus">Звонит...</div>
         </div>
-        <div class="call-video" id="callVideoContainer">
+        <div class="call-video" id="callVideoContainer" style="display: none;">
             <video id="remoteVideo" autoplay playsinline></video>
             <video id="localVideo" class="local" autoplay playsinline muted></video>
         </div>
@@ -1137,7 +1126,7 @@
         </div>
     </div>
 
-    <!-- Модальное окно для просмотра изображения -->
+    <!-- Модальные окна -->
     <div id="imageModal" class="modal">
         <div class="modal-content">
             <span class="close">&times;</span>
@@ -1162,7 +1151,6 @@
         </div>
     </div>
 
-    <!-- Модальное окно регистрации/входа -->
     <div id="authModal" class="modal">
         <div class="modal-content auth-modal">
             <h2 id="authTitle">Вход в Roma</h2>
@@ -1175,7 +1163,6 @@
         </div>
     </div>
 
-    <!-- Модальное окно загрузки изображения -->
     <div id="uploadModal" class="modal">
         <div class="modal-content">
             <h2>Загрузить изображение</h2>
@@ -1188,7 +1175,6 @@
         </div>
     </div>
 
-    <!-- Модальное окно редактирования профиля -->
     <div id="editProfileModal" class="modal">
         <div class="modal-content">
             <h2>Редактировать профиль</h2>
@@ -1206,7 +1192,6 @@
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
 
-    <!-- Font Awesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
 
@@ -1215,7 +1200,7 @@
         // 1. НАСТРОЙКИ FIREBASE
         // ================================================
         const firebaseConfig = {
-            apiKey: "AIzaSyDU3iCDKldEm-FrLtWbgaESeN1Pew6NOBg",
+           apiKey: "AIzaSyDU3iCDKldEm-FrLtWbgaESeN1Pew6NOBg",
             authDomain: "romamessenger-bbc6a.firebaseapp.com",
             databaseURL: "https://romamessenger-bbc6a-default-rtdb.firebaseio.com",
             projectId: "romamessenger-bbc6a",
@@ -1312,6 +1297,7 @@
                     showView('chat');
                     listenMessages();
                     listenPrivateMessages();
+                    listenIncomingCalls();
                     showNotification('Добро пожаловать в Roma!', 'success');
                 } else {
                     showNotification('Неверное имя пользователя или пароль', 'error');
@@ -1338,6 +1324,7 @@
                 showView('chat');
                 listenMessages();
                 listenPrivateMessages();
+                listenIncomingCalls();
                 showNotification('Регистрация успешна!', 'success');
             }
         }
@@ -1396,7 +1383,7 @@
         });
 
         // ================================================
-        // 6. ПОИСК ПОЛЬЗОВАТЕЛЕЙ
+        // 6. ПОИСК ПОЛЬЗОВАТЕЛЕЙ (ИСПРАВЛЕННЫЙ)
         // ================================================
 
         function searchUsers() {
@@ -1408,13 +1395,14 @@
                 return;
             }
             
+            // Ищем пользователей по имени (исключая текущего)
             const users = window.appUsers.filter(u => 
                 u.id !== currentUser.id && 
                 u.username.toLowerCase().includes(query)
             );
             
             if (users.length === 0) {
-                results.innerHTML = '<div style="padding: 8px; color: #999; font-size: 13px;">Пользователи не найдены</div>';
+                results.innerHTML = '<div style="padding: 12px; color: #999; font-size: 13px; text-align: center;">👤 Пользователи не найдены</div>';
                 return;
             }
             
@@ -1422,7 +1410,7 @@
                 <div class="user-list-item" onclick="startPrivateChat('${user.id}')">
                     <img src="${user.avatar || getAnonymousAvatar(user.username)}" alt="">
                     <div>
-                        <div class="name">${user.username}</div>
+                        <div class="name">${escapeHtml(user.username)}</div>
                         <div class="online-status ${user.online ? 'online' : ''}">${user.online ? '🟢 Онлайн' : '⚫ Оффлайн'}</div>
                     </div>
                 </div>
@@ -1719,7 +1707,7 @@
         }
 
         // ================================================
-        // 9. СИСТЕМА ЗВОНКОВ (WebRTC)
+        // 9. СИСТЕМА ЗВОНКОВ (WebRTC) - ОБНОВЛЕННАЯ
         // ================================================
 
         let peerConnection = null;
@@ -1728,17 +1716,36 @@
         let callType = 'audio';
         let isIncomingCall = false;
         let callChannel = null;
+        let isGroupCall = false;
 
         const callRef = database.ref('calls');
 
-        function startCall(type) {
+        function startPrivateCall(type) {
             if (!privateChatWith) {
                 showNotification('Сначала выберите пользователя!', 'error');
                 return;
             }
+            isGroupCall = false;
+            initiateCall(type, privateChatWith);
+        }
 
+        function startGroupCall(type) {
+            isGroupCall = true;
+            // Для общего чата звоним всем онлайн пользователям
+            const onlineUsers = window.appUsers.filter(u => u.id !== currentUser.id && u.online);
+            if (onlineUsers.length === 0) {
+                showNotification('Нет онлайн пользователей для звонка', 'error');
+                return;
+            }
+            // Звоним первому онлайн пользователю
+            const targetUser = onlineUsers[0];
+            initiateCall(type, targetUser.id);
+            showNotification(`Звонок пользователю ${targetUser.username}...`, 'info');
+        }
+
+        function initiateCall(type, targetUserId) {
             callType = type;
-            const user = window.appUsers.find(u => u.id === privateChatWith);
+            const user = window.appUsers.find(u => u.id === targetUserId);
             
             document.getElementById('callAvatar').src = user.avatar || getAnonymousAvatar(user.username);
             document.getElementById('callName').textContent = user.username;
@@ -1747,13 +1754,11 @@
             document.getElementById('callModal').classList.add('active');
             document.getElementById('callVideoContainer').style.display = type === 'video' ? 'flex' : 'none';
 
-            // Проверяем, есть ли медиаустройства
             if (!navigator.mediaDevices) {
                 showNotification('Ваш браузер не поддерживает звонки', 'error');
                 return;
             }
 
-            // Запрашиваем доступ к микрофону/камере
             const constraints = type === 'video' ? 
                 { audio: true, video: true } : 
                 { audio: true, video: false };
@@ -1764,7 +1769,7 @@
                     if (type === 'video') {
                         document.getElementById('localVideo').srcObject = stream;
                     }
-                    createCallOffer();
+                    createCallOffer(targetUserId);
                 })
                 .catch(err => {
                     showNotification('Не удалось получить доступ к микрофону/камере', 'error');
@@ -1772,7 +1777,7 @@
                 });
         }
 
-        function createCallOffer() {
+        function createCallOffer(targetUserId) {
             const configuration = {
                 iceServers: [
                     { urls: 'stun:stun.l.google.com:19302' }
@@ -1781,35 +1786,32 @@
 
             peerConnection = new RTCPeerConnection(configuration);
             
-            // Добавляем локальный поток
             localStream.getTracks().forEach(track => {
                 peerConnection.addTrack(track, localStream);
             });
 
-            // Обработчик удаленного потока
             peerConnection.ontrack = (event) => {
                 remoteStream = event.streams[0];
                 document.getElementById('remoteVideo').srcObject = remoteStream;
             };
 
-            // Создаем offer
             peerConnection.createOffer()
                 .then(offer => {
                     return peerConnection.setLocalDescription(offer);
                 })
                 .then(() => {
-                    const chatId = [currentUser.id, privateChatWith].sort().join('_');
+                    const chatId = [currentUser.id, targetUserId].sort().join('_');
                     const callData = {
                         from: currentUser.id,
-                        to: privateChatWith,
+                        to: targetUserId,
                         type: callType,
                         offer: peerConnection.localDescription,
                         status: 'ringing',
-                        timestamp: firebase.database.ServerValue.TIMESTAMP
+                        timestamp: firebase.database.ServerValue.TIMESTAMP,
+                        isGroup: isGroupCall
                     };
                     callRef.child(chatId).set(callData);
                     
-                    // Слушаем ответ
                     callRef.child(chatId).on('value', (snapshot) => {
                         const data = snapshot.val();
                         if (data && data.answer && data.status === 'connected') {
@@ -1864,7 +1866,6 @@
                         document.getElementById('remoteVideo').srcObject = remoteStream;
                     };
 
-                    // Получаем offer из Firebase
                     callRef.child(chatId).once('value', (snapshot) => {
                         const data = snapshot.val();
                         if (data && data.offer) {
@@ -1886,7 +1887,6 @@
                         }
                     });
 
-                    // Слушаем завершение звонка
                     callRef.child(chatId).on('value', (snapshot) => {
                         const data = snapshot.val();
                         if (data && data.status === 'ended') {
@@ -1935,7 +1935,6 @@
             }
         }
 
-        // Слушаем входящие звонки
         function listenIncomingCalls() {
             callRef.on('child_added', (snapshot) => {
                 const data = snapshot.val();
@@ -1944,11 +1943,12 @@
                     privateChatWith = data.from;
                     callType = data.type;
                     callChannel = snapshot.key;
+                    isGroupCall = data.isGroup || false;
                     
                     const user = window.appUsers.find(u => u.id === data.from);
                     if (user) {
                         document.getElementById('callAvatar').src = user.avatar || getAnonymousAvatar(user.username);
-                        document.getElementById('callName').textContent = user.username;
+                        document.getElementById('callName').textContent = user.username + (isGroupCall ? ' (Общий чат)' : '');
                         document.getElementById('callStatus').textContent = 'Входящий звонок...';
                         document.getElementById('acceptCallBtn').style.display = 'flex';
                         document.getElementById('callModal').classList.add('active');
@@ -2094,18 +2094,11 @@
             document.getElementById(`${viewId}View`).classList.add('active');
             
             document.querySelectorAll('.nav-item').forEach(item => item.classList.remove('active'));
-            const navMap = {
-                'chat': 'chat',
-                'private': 'private',
-                'gallery': 'gallery',
-                'profile': 'profile'
-            };
-            const targetNav = document.querySelector(`[data-view="${navMap[viewId] || viewId}"]`);
+            const targetNav = document.querySelector(`[data-view="${viewId}"]`);
             if (targetNav) targetNav.classList.add('active');
             
             if (viewId === 'gallery') renderGallery();
             
-            // Скрываем кнопки звонка если не в приватном чате
             if (viewId !== 'private') {
                 document.getElementById('audioCallBtn').style.display = 'none';
                 document.getElementById('videoCallBtn').style.display = 'none';
