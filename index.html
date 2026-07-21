@@ -1200,7 +1200,7 @@
         // 1. НАСТРОЙКИ FIREBASE
         // ================================================
         const firebaseConfig = {
-           apiKey: "AIzaSyDU3iCDKldEm-FrLtWbgaESeN1Pew6NOBg",
+          apiKey: "AIzaSyDU3iCDKldEm-FrLtWbgaESeN1Pew6NOBg",
             authDomain: "romamessenger-bbc6a.firebaseapp.com",
             databaseURL: "https://romamessenger-bbc6a-default-rtdb.firebaseio.com",
             projectId: "romamessenger-bbc6a",
@@ -1383,7 +1383,7 @@
         });
 
         // ================================================
-        // 6. ПОИСК ПОЛЬЗОВАТЕЛЕЙ (ИСПРАВЛЕННЫЙ)
+        // 6. ПОИСК ПОЛЬЗОВАТЕЛЕЙ
         // ================================================
 
         function searchUsers() {
@@ -1395,7 +1395,6 @@
                 return;
             }
             
-            // Ищем пользователей по имени (исключая текущего)
             const users = window.appUsers.filter(u => 
                 u.id !== currentUser.id && 
                 u.username.toLowerCase().includes(query)
@@ -1433,7 +1432,6 @@
             document.getElementById('privateInput').disabled = false;
             document.getElementById('sendPrivateBtn').disabled = false;
             
-            // Показываем кнопки звонка
             document.getElementById('audioCallBtn').style.display = 'flex';
             document.getElementById('videoCallBtn').style.display = 'flex';
             
@@ -1707,7 +1705,7 @@
         }
 
         // ================================================
-        // 9. СИСТЕМА ЗВОНКОВ (WebRTC) - ОБНОВЛЕННАЯ
+        // 9. СИСТЕМА ЗВОНКОВ (WebRTC) - ИСПРАВЛЕННАЯ
         // ================================================
 
         let peerConnection = null;
@@ -1731,14 +1729,13 @@
 
         function startGroupCall(type) {
             isGroupCall = true;
-            // Для общего чата звоним всем онлайн пользователям
-            const onlineUsers = window.appUsers.filter(u => u.id !== currentUser.id && u.online);
-            if (onlineUsers.length === 0) {
-                showNotification('Нет онлайн пользователей для звонка', 'error');
+            // Звоним первому пользователю из списка (без проверки онлайн)
+            const users = window.appUsers.filter(u => u.id !== currentUser.id);
+            if (users.length === 0) {
+                showNotification('Нет других пользователей для звонка', 'error');
                 return;
             }
-            // Звоним первому онлайн пользователю
-            const targetUser = onlineUsers[0];
+            const targetUser = users[0];
             initiateCall(type, targetUser.id);
             showNotification(`Звонок пользователю ${targetUser.username}...`, 'info');
         }
@@ -1748,7 +1745,7 @@
             const user = window.appUsers.find(u => u.id === targetUserId);
             
             document.getElementById('callAvatar').src = user.avatar || getAnonymousAvatar(user.username);
-            document.getElementById('callName').textContent = user.username;
+            document.getElementById('callName').textContent = user.username + (isGroupCall ? ' (Общий чат)' : '');
             document.getElementById('callStatus').textContent = 'Звонит...';
             document.getElementById('acceptCallBtn').style.display = 'none';
             document.getElementById('callModal').classList.add('active');
