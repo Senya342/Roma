@@ -3,9 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
-    <title>Roma - Мессенджер с звонками и фото</title>
+    <title>Roma - Мессенджер с профилями</title>
     <style>
-        /* ... все стили остаются без изменений ... */
         * {
             margin: 0;
             padding: 0;
@@ -215,6 +214,11 @@
             display: flex;
             align-items: center;
             gap: 12px;
+            cursor: pointer;
+        }
+
+        .chat-header .chat-info:hover .name {
+            color: #1E88E5;
         }
 
         .chat-header .chat-info img {
@@ -227,6 +231,7 @@
         .chat-header .chat-info .name {
             font-size: 18px;
             font-weight: 600;
+            transition: color 0.2s ease;
         }
 
         .chat-header .chat-actions {
@@ -302,6 +307,12 @@
             font-size: 18px;
             color: white;
             flex-shrink: 0;
+            cursor: pointer;
+            transition: transform 0.2s ease;
+        }
+
+        .message-avatar:hover {
+            transform: scale(1.1);
         }
 
         .message-content {
@@ -320,6 +331,13 @@
         .message-name {
             font-weight: 600;
             color: #2c3e50;
+            cursor: pointer;
+            transition: color 0.2s ease;
+        }
+
+        .message-name:hover {
+            color: #1E88E5;
+            text-decoration: underline;
         }
 
         .message-time {
@@ -568,6 +586,104 @@
             border: 2px solid #1E88E5;
         }
 
+        /* Profile Modal */
+        .profile-modal {
+            max-width: 500px;
+            width: 90%;
+        }
+
+        .profile-modal .profile-card {
+            text-align: center;
+        }
+
+        .profile-modal .profile-avatar {
+            width: 120px;
+            height: 120px;
+            border-radius: 50%;
+            object-fit: cover;
+            margin: 0 auto 20px;
+            border: 4px solid #1E88E5;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 48px;
+            font-weight: 700;
+            color: white;
+        }
+
+        .profile-modal .profile-name {
+            font-size: 28px;
+            font-weight: 700;
+            margin-bottom: 5px;
+        }
+
+        .profile-modal .profile-status {
+            color: #7f8c8d;
+            margin-bottom: 15px;
+        }
+
+        .profile-modal .profile-stats {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+            margin: 15px 0;
+            padding: 15px;
+            background: #f5f7fa;
+            border-radius: 12px;
+        }
+
+        .profile-modal .profile-stats div {
+            text-align: center;
+        }
+
+        .profile-modal .profile-stats .number {
+            font-size: 20px;
+            font-weight: 700;
+            color: #1E88E5;
+        }
+
+        .profile-modal .profile-stats .label {
+            font-size: 11px;
+            color: #999;
+        }
+
+        .profile-modal .profile-actions {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+        }
+
+        .profile-modal .profile-actions button {
+            flex: 1;
+            padding: 12px;
+            border: none;
+            border-radius: 12px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .profile-modal .profile-actions button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        }
+
+        .profile-modal .profile-actions .message-btn {
+            background: #1E88E5;
+            color: white;
+        }
+
+        .profile-modal .profile-actions .call-btn-modal {
+            background: #4caf50;
+            color: white;
+        }
+
+        .profile-modal .profile-actions .close-btn {
+            background: #f5f7fa;
+            color: #2c3e50;
+        }
+
+        /* Gallery Styles */
         .gallery-header {
             padding: 20px 30px;
             background: white;
@@ -664,6 +780,7 @@
             color: #7f8c8d;
         }
 
+        /* Profile Styles */
         .profile-content {
             padding: 30px;
             overflow-y: auto;
@@ -715,6 +832,7 @@
             font-size: 16px;
         }
 
+        /* Modal Styles */
         .modal {
             display: none;
             position: fixed;
@@ -946,6 +1064,10 @@
                 bottom: 80px;
                 right: 10px;
             }
+
+            .profile-modal .profile-stats {
+                grid-template-columns: 1fr;
+            }
         }
 
         ::-webkit-scrollbar {
@@ -1041,7 +1163,7 @@
             <div id="privateView" class="view">
                 <div class="chat-header">
                     <button class="back-btn" onclick="showView('private')">←</button>
-                    <div class="chat-info">
+                    <div class="chat-info" onclick="openUserProfile(privateChatWith)">
                         <img id="privateAvatar" src="" alt="">
                         <span class="name" id="privateUserName">Выберите пользователя</span>
                     </div>
@@ -1126,6 +1248,14 @@
         </div>
     </div>
 
+    <!-- Модальное окно просмотра профиля пользователя -->
+    <div id="userProfileModal" class="modal">
+        <div class="modal-content profile-modal">
+            <span class="close" onclick="closeUserProfile()">&times;</span>
+            <div id="userProfileContent"></div>
+        </div>
+    </div>
+
     <!-- Модальные окна -->
     <div id="imageModal" class="modal">
         <div class="modal-content">
@@ -1200,7 +1330,7 @@
         // 1. НАСТРОЙКИ FIREBASE
         // ================================================
         const firebaseConfig = {
-          apiKey: "AIzaSyDU3iCDKldEm-FrLtWbgaESeN1Pew6NOBg",
+            apiKey: "AIzaSyDU3iCDKldEm-FrLtWbgaESeN1Pew6NOBg",
             authDomain: "romamessenger-bbc6a.firebaseapp.com",
             databaseURL: "https://romamessenger-bbc6a-default-rtdb.firebaseio.com",
             projectId: "romamessenger-bbc6a",
@@ -1330,7 +1460,7 @@
         }
 
         // ================================================
-        // 5. ПРОФИЛЬ
+        // 5. ПРОФИЛЬ ПОЛЬЗОВАТЕЛЯ
         // ================================================
 
         function loadUserData() {
@@ -1383,7 +1513,85 @@
         });
 
         // ================================================
-        // 6. ПОИСК ПОЛЬЗОВАТЕЛЕЙ
+        // 6. ОТКРЫТИЕ ПРОФИЛЯ ПОЛЬЗОВАТЕЛЯ
+        // ================================================
+
+        window.openUserProfile = function(userId) {
+            if (!userId) {
+                showNotification('Пользователь не найден', 'error');
+                return;
+            }
+            
+            const user = window.appUsers.find(u => u.id === userId);
+            if (!user) {
+                showNotification('Пользователь не найден', 'error');
+                return;
+            }
+            
+            const isOwnProfile = user.id === currentUser.id;
+            const avatar = user.avatar || getAnonymousAvatar(user.username);
+            
+            const wins = user.wins || 0;
+            const losses = user.losses || 0;
+            const totalBattles = wins + losses;
+            const winRate = totalBattles > 0 ? Math.round((wins / totalBattles) * 100) : 0;
+            
+            const profileHtml = `
+                <div class="profile-card">
+                    <div class="profile-avatar" style="background: ${getColorFromName(user.username)}; width: 120px; height: 120px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 48px; color: white; margin: 0 auto 20px; border: 4px solid #1E88E5;">
+                        ${user.username.charAt(0).toUpperCase()}
+                    </div>
+                    <h2 class="profile-name">${escapeHtml(user.username)}</h2>
+                    <p class="profile-status">${escapeHtml(user.status || 'Нет статуса')}</p>
+                    <div class="profile-stats">
+                        <div>
+                            <div class="number">${user.totalTrophies || 0}</div>
+                            <div class="label">🏆 Трофеи</div>
+                        </div>
+                        <div>
+                            <div class="number">${wins}</div>
+                            <div class="label">✅ Победы</div>
+                        </div>
+                        <div>
+                            <div class="number">${winRate}%</div>
+                            <div class="label">📊 Винрейт</div>
+                        </div>
+                    </div>
+                    <div class="profile-actions">
+                        ${!isOwnProfile ? `
+                            <button class="message-btn" onclick="goToPrivateChat('${user.id}')">
+                                💬 Личные сообщения
+                            </button>
+                            <button class="call-btn-modal" onclick="startPrivateCall('audio')">
+                                📞
+                            </button>
+                            <button class="call-btn-modal" onclick="startPrivateCall('video')" style="background: #1E88E5;">
+                                📹
+                            </button>
+                        ` : `
+                            <button class="close-btn" onclick="closeUserProfile()" style="flex: 1;">
+                                Закрыть
+                            </button>
+                        `}
+                    </div>
+                </div>
+            `;
+            
+            document.getElementById('userProfileContent').innerHTML = profileHtml;
+            document.getElementById('userProfileModal').classList.add('active');
+        };
+
+        window.closeUserProfile = function() {
+            document.getElementById('userProfileModal').classList.remove('active');
+        };
+
+        window.goToPrivateChat = function(userId) {
+            closeUserProfile();
+            startPrivateChat(userId);
+        };
+
+        // ================================================
+        // 7. ПОИСК ПОЛЬЗОВАТЕЛЕЙ
         // ================================================
 
         function searchUsers() {
@@ -1406,7 +1614,7 @@
             }
             
             results.innerHTML = users.map(user => `
-                <div class="user-list-item" onclick="startPrivateChat('${user.id}')">
+                <div class="user-list-item" onclick="openUserProfile('${user.id}')">
                     <img src="${user.avatar || getAnonymousAvatar(user.username)}" alt="">
                     <div>
                         <div class="name">${escapeHtml(user.username)}</div>
@@ -1417,7 +1625,7 @@
         }
 
         // ================================================
-        // 7. ЛИЧНЫЕ СООБЩЕНИЯ
+        // 8. ЛИЧНЫЕ СООБЩЕНИЯ
         // ================================================
 
         const privateMessagesRef = database.ref('privateMessages');
@@ -1444,6 +1652,12 @@
             document.getElementById('searchUsers').value = '';
             document.getElementById('searchResults').innerHTML = '';
         }
+
+        // ================================================
+        // 9. ОСТАЛЬНЫЕ ФУНКЦИИ (ЧАТЫ, ЗВОНКИ, ГАЛЕРЕЯ)
+        // ================================================
+
+        // ... (все остальные функции остаются без изменений)
 
         function sendPrivateMessage(text, imageData = null) {
             if (!text.trim() && !imageData) return;
@@ -1540,10 +1754,10 @@
                     
                     return `
                         <div class="message ${isOwn ? 'own' : ''}" data-key="${msg.firebaseKey}">
-                            <img src="${avatar}" alt="" class="message-avatar">
+                            <img src="${avatar}" alt="" class="message-avatar" onclick="openUserProfile('${msg.from}')">
                             <div class="message-content">
                                 <div class="message-header">
-                                    <span class="message-name">${escapeHtml(msg.username)}</span>
+                                    <span class="message-name" onclick="openUserProfile('${msg.from}')">${escapeHtml(msg.username)}</span>
                                     <span class="message-time">${formatTime(msg.timestamp)}</span>
                                 </div>
                                 ${contentHtml}
@@ -1577,7 +1791,7 @@
         }
 
         // ================================================
-        // 8. ОБЩИЙ ЧАТ
+        // 10. ОБЩИЙ ЧАТ
         // ================================================
 
         const chatMessagesRef = database.ref('chatMessages');
@@ -1647,10 +1861,10 @@
                 
                 return `
                     <div class="message ${isOwn ? 'own' : ''}" data-key="${msg.firebaseKey}">
-                        <img src="${avatar}" alt="${msg.username}" class="message-avatar">
+                        <img src="${avatar}" alt="${msg.username}" class="message-avatar" onclick="openUserProfile('${msg.userId}')">
                         <div class="message-content">
                             <div class="message-header">
-                                <span class="message-name">${escapeHtml(msg.username)}</span>
+                                <span class="message-name" onclick="openUserProfile('${msg.userId}')">${escapeHtml(msg.username)}</span>
                                 <span class="message-time">${formatTime(msg.timestamp)}</span>
                             </div>
                             ${contentHtml}
@@ -1705,7 +1919,7 @@
         }
 
         // ================================================
-        // 9. СИСТЕМА ЗВОНКОВ (WebRTC) - ИСПРАВЛЕННАЯ
+        // 11. СИСТЕМА ЗВОНКОВ (WebRTC)
         // ================================================
 
         let peerConnection = null;
@@ -1729,7 +1943,6 @@
 
         function startGroupCall(type) {
             isGroupCall = true;
-            // Звоним первому пользователю из списка (без проверки онлайн)
             const users = window.appUsers.filter(u => u.id !== currentUser.id);
             if (users.length === 0) {
                 showNotification('Нет других пользователей для звонка', 'error');
@@ -1956,7 +2169,7 @@
         }
 
         // ================================================
-        // 10. ГАЛЕРЕЯ
+        // 12. ГАЛЕРЕЯ
         // ================================================
 
         function renderGallery() {
@@ -2083,7 +2296,7 @@
         });
 
         // ================================================
-        // 11. НАВИГАЦИЯ
+        // 13. НАВИГАЦИЯ
         // ================================================
 
         function showView(viewId) {
@@ -2111,7 +2324,7 @@
         }
 
         // ================================================
-        // 12. ИНИЦИАЛИЗАЦИЯ
+        // 14. ИНИЦИАЛИЗАЦИЯ
         // ================================================
 
         function initEvents() {
@@ -2228,7 +2441,7 @@
         }
 
         // ================================================
-        // 13. ЗАПУСК
+        // 15. ЗАПУСК
         // ================================================
 
         document.addEventListener('DOMContentLoaded', function() {
