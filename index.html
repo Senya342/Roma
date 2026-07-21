@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
-    <title>Roma - Мессенджер с личными чатами</title>
+    <title>Roma - Мессенджер с звонками и фото</title>
     <style>
         * {
             margin: 0;
@@ -231,6 +231,38 @@
             font-weight: 600;
         }
 
+        .chat-header .chat-actions {
+            display: flex;
+            gap: 10px;
+        }
+
+        .chat-header .chat-actions button {
+            background: none;
+            border: none;
+            font-size: 20px;
+            cursor: pointer;
+            padding: 8px;
+            border-radius: 50%;
+            transition: all 0.2s ease;
+            width: 40px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .chat-header .chat-actions button:hover {
+            background: #f0f0f0;
+        }
+
+        .chat-header .chat-actions .call-btn {
+            color: #4caf50;
+        }
+
+        .chat-header .chat-actions .video-call-btn {
+            color: #1E88E5;
+        }
+
         .chat-messages {
             flex: 1;
             overflow-y: auto;
@@ -304,6 +336,16 @@
             background: #f1f3f5;
             padding: 10px 14px;
             border-radius: 12px;
+            display: inline-block;
+        }
+
+        .message-image {
+            max-width: 300px;
+            max-height: 300px;
+            border-radius: 12px;
+            cursor: pointer;
+            display: block;
+            margin-top: 5px;
         }
 
         .message.own .message-text {
@@ -364,6 +406,7 @@
             border-top: 1px solid #e1e8ed;
             display: flex;
             gap: 12px;
+            align-items: center;
         }
 
         .chat-input-area input {
@@ -381,6 +424,22 @@
             box-shadow: 0 0 0 3px rgba(30,136,229,0.1);
         }
 
+        .chat-input-area .file-btn {
+            background: none;
+            border: none;
+            font-size: 24px;
+            cursor: pointer;
+            padding: 8px;
+            border-radius: 50%;
+            transition: all 0.2s ease;
+            color: #999;
+        }
+
+        .chat-input-area .file-btn:hover {
+            background: #f0f0f0;
+            color: #1E88E5;
+        }
+
         .send-btn {
             background: #1E88E5;
             color: white;
@@ -389,6 +448,7 @@
             border-radius: 12px;
             cursor: pointer;
             transition: all 0.3s ease;
+            height: 46px;
         }
 
         .send-btn:hover {
@@ -407,6 +467,108 @@
 
         .back-btn:hover {
             color: #1E88E5;
+        }
+
+        /* Call Modal */
+        .call-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.9);
+            z-index: 3000;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            flex-direction: column;
+        }
+
+        .call-modal.active {
+            display: flex;
+        }
+
+        .call-modal .call-info {
+            text-align: center;
+            color: white;
+            margin-bottom: 30px;
+        }
+
+        .call-modal .call-info img {
+            width: 100px;
+            height: 100px;
+            border-radius: 50%;
+            object-fit: cover;
+            margin-bottom: 15px;
+            border: 3px solid #1E88E5;
+        }
+
+        .call-modal .call-info .name {
+            font-size: 28px;
+            font-weight: 600;
+        }
+
+        .call-modal .call-info .status {
+            font-size: 16px;
+            color: #aaa;
+            margin-top: 5px;
+        }
+
+        .call-modal .call-actions {
+            display: flex;
+            gap: 30px;
+            margin-top: 30px;
+        }
+
+        .call-modal .call-actions button {
+            width: 70px;
+            height: 70px;
+            border-radius: 50%;
+            border: none;
+            font-size: 30px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .call-modal .call-actions button:hover {
+            transform: scale(1.1);
+        }
+
+        .call-modal .call-actions .end-call {
+            background: #f44336;
+            color: white;
+        }
+
+        .call-modal .call-actions .accept-call {
+            background: #4caf50;
+            color: white;
+        }
+
+        .call-modal .call-actions .mute-call {
+            background: #ff9800;
+            color: white;
+        }
+
+        .call-modal .call-video {
+            display: flex;
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+
+        .call-modal .call-video video {
+            border-radius: 12px;
+            background: #1a1a1a;
+            width: 45vw;
+            max-height: 45vh;
+        }
+
+        .call-modal .call-video video.local {
+            width: 20vw;
+            max-height: 20vh;
+            position: absolute;
+            bottom: 100px;
+            right: 30px;
+            border: 2px solid #1E88E5;
         }
 
         /* Gallery Styles */
@@ -782,6 +944,16 @@
             .auth-modal {
                 width: 90%;
             }
+
+            .call-modal .call-video video {
+                width: 90vw;
+            }
+
+            .call-modal .call-video video.local {
+                width: 40vw;
+                bottom: 80px;
+                right: 10px;
+            }
         }
 
         ::-webkit-scrollbar {
@@ -859,6 +1031,10 @@
                     <!-- Сообщения будут здесь -->
                 </div>
                 <div class="chat-input-area">
+                    <input type="file" id="chatFileInput" accept="image/*" style="display: none;" onchange="sendChatImage(event)">
+                    <button class="file-btn" onclick="document.getElementById('chatFileInput').click()">
+                        <i class="fas fa-image"></i>
+                    </button>
                     <input type="text" id="chatInput" placeholder="Введите сообщение..." maxlength="500">
                     <button id="sendMessageBtn" class="send-btn">
                         <i class="fas fa-paper-plane"></i>
@@ -874,6 +1050,14 @@
                         <img id="privateAvatar" src="" alt="">
                         <span class="name" id="privateUserName">Выберите пользователя</span>
                     </div>
+                    <div class="chat-actions">
+                        <button class="call-btn" id="audioCallBtn" onclick="startCall('audio')" title="Аудиозвонок">
+                            <i class="fas fa-phone"></i>
+                        </button>
+                        <button class="video-call-btn" id="videoCallBtn" onclick="startCall('video')" title="Видеозвонок">
+                            <i class="fas fa-video"></i>
+                        </button>
+                    </div>
                 </div>
                 <div class="chat-messages" id="privateMessages">
                     <div style="text-align:center; padding:40px; color:#999;">
@@ -881,6 +1065,10 @@
                     </div>
                 </div>
                 <div class="chat-input-area">
+                    <input type="file" id="privateFileInput" accept="image/*" style="display: none;" onchange="sendPrivateImage(event)">
+                    <button class="file-btn" onclick="document.getElementById('privateFileInput').click()">
+                        <i class="fas fa-image"></i>
+                    </button>
                     <input type="text" id="privateInput" placeholder="Введите сообщение..." maxlength="500" disabled>
                     <button id="sendPrivateBtn" class="send-btn" disabled>
                         <i class="fas fa-paper-plane"></i>
@@ -923,6 +1111,30 @@
                 </div>
             </div>
         </main>
+    </div>
+
+    <!-- Модальное окно звонка -->
+    <div id="callModal" class="call-modal">
+        <div class="call-info">
+            <img id="callAvatar" src="" alt="">
+            <div class="name" id="callName">Имя</div>
+            <div class="status" id="callStatus">Звонит...</div>
+        </div>
+        <div class="call-video" id="callVideoContainer">
+            <video id="remoteVideo" autoplay playsinline></video>
+            <video id="localVideo" class="local" autoplay playsinline muted></video>
+        </div>
+        <div class="call-actions">
+            <button class="mute-call" id="muteBtn" onclick="toggleMute()">
+                <i class="fas fa-microphone"></i>
+            </button>
+            <button class="end-call" onclick="endCall()">
+                <i class="fas fa-phone-slash"></i>
+            </button>
+            <button class="accept-call" id="acceptCallBtn" onclick="acceptCall()" style="display: none;">
+                <i class="fas fa-phone"></i>
+            </button>
+        </div>
     </div>
 
     <!-- Модальное окно для просмотра изображения -->
@@ -1051,7 +1263,7 @@
         }
 
         // ================================================
-        // 3. ДАННЫЕ И АВТОРИЗАЦИЯ (БЕЗ ТЕСТОВЫХ ПОЛЬЗОВАТЕЛЕЙ)
+        // 3. ДАННЫЕ И АВТОРИЗАЦИЯ
         // ================================================
 
         let currentUser = null;
@@ -1168,19 +1380,16 @@
             const newName = document.getElementById('editName').value.trim();
             const newStatus = document.getElementById('editStatus').value.trim();
             
-            // Обновляем данные пользователя
             currentUser.username = newName;
             currentUser.status = newStatus;
             currentUser.avatar = getAnonymousAvatar(newName);
             
-            // Обновляем в массиве пользователей
             const userIndex = window.appUsers.findIndex(u => u.id === currentUser.id);
             if (userIndex !== -1) {
                 window.appUsers[userIndex] = { ...currentUser };
             }
             saveUsers();
             
-            // Обновляем UI
             loadUserData();
             document.getElementById('editProfileModal').classList.remove('active');
             showNotification('Профиль обновлен!', 'success');
@@ -1236,6 +1445,10 @@
             document.getElementById('privateInput').disabled = false;
             document.getElementById('sendPrivateBtn').disabled = false;
             
+            // Показываем кнопки звонка
+            document.getElementById('audioCallBtn').style.display = 'flex';
+            document.getElementById('videoCallBtn').style.display = 'flex';
+            
             const badge = document.getElementById('privateBadge');
             badge.style.display = 'none';
             badge.textContent = '0';
@@ -1246,23 +1459,37 @@
             document.getElementById('searchResults').innerHTML = '';
         }
 
-        function sendPrivateMessage(text) {
-            if (!text.trim() || !currentUser || !privateChatWith) return;
+        function sendPrivateMessage(text, imageData = null) {
+            if (!text.trim() && !imageData) return;
+            if (!currentUser || !privateChatWith) return;
             
             const chatId = [currentUser.id, privateChatWith].sort().join('_');
             const messageData = {
                 from: currentUser.id,
                 to: privateChatWith,
                 username: currentUser.username,
-                avatar: currentUser.avatar, // Сохраняем актуальную аватарку
-                text: text.trim(),
+                avatar: currentUser.avatar,
+                text: text.trim() || '',
+                image: imageData || null,
                 timestamp: firebase.database.ServerValue.TIMESTAMP,
                 deleted: false
             };
             
             privateMessagesRef.child(chatId).push(messageData);
-            showNotification('Сообщение отправлено!', 'success');
             document.getElementById('privateInput').value = '';
+        }
+
+        function sendPrivateImage(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                sendPrivateMessage('📷 Фото', e.target.result);
+                showNotification('Фото отправлено! 📸', 'success');
+            };
+            reader.readAsDataURL(file);
+            event.target.value = '';
         }
 
         function listenPrivateMessages() {
@@ -1315,8 +1542,15 @@
                     if (msg.deleted) return '';
                     
                     const isOwn = msg.from === currentUser.id;
-                    // Используем аватарку из сообщения или генерируем новую
                     const avatar = msg.avatar || getAnonymousAvatar(msg.username);
+                    
+                    let contentHtml = '';
+                    if (msg.image) {
+                        contentHtml += `<img src="${msg.image}" class="message-image" onclick="openImagePreview('${msg.image}')">`;
+                    }
+                    if (msg.text) {
+                        contentHtml += `<div class="message-text">${escapeHtml(msg.text)}</div>`;
+                    }
                     
                     return `
                         <div class="message ${isOwn ? 'own' : ''}" data-key="${msg.firebaseKey}">
@@ -1326,7 +1560,7 @@
                                     <span class="message-name">${escapeHtml(msg.username)}</span>
                                     <span class="message-time">${formatTime(msg.timestamp)}</span>
                                 </div>
-                                <div class="message-text">${escapeHtml(msg.text)}</div>
+                                ${contentHtml}
                             </div>
                             ${isOwn ? `
                                 <div class="message-actions">
@@ -1349,7 +1583,8 @@
             
             privateMessagesRef.child(chatId).child(key).update({
                 deleted: true,
-                text: 'Сообщение удалено'
+                text: 'Сообщение удалено',
+                image: null
             });
             
             showNotification('Сообщение удалено', 'info');
@@ -1361,21 +1596,35 @@
 
         const chatMessagesRef = database.ref('chatMessages');
 
-        function sendMessageToChat(text) {
-            if (!text.trim() || !currentUser) return;
+        function sendMessageToChat(text, imageData = null) {
+            if (!text.trim() && !imageData) return;
+            if (!currentUser) return;
             
             const messageData = {
                 userId: currentUser.id,
                 username: currentUser.username,
-                avatar: currentUser.avatar, // Сохраняем актуальную аватарку
-                text: text.trim(),
+                avatar: currentUser.avatar,
+                text: text.trim() || '',
+                image: imageData || null,
                 timestamp: firebase.database.ServerValue.TIMESTAMP,
                 deleted: false
             };
             
             chatMessagesRef.push(messageData);
-            showNotification('Сообщение отправлено!', 'success');
             document.getElementById('chatInput').value = '';
+        }
+
+        function sendChatImage(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                sendMessageToChat('📷 Фото', e.target.result);
+                showNotification('Фото отправлено! 📸', 'success');
+            };
+            reader.readAsDataURL(file);
+            event.target.value = '';
         }
 
         function listenMessages() {
@@ -1400,8 +1649,15 @@
                 if (msg.deleted) return '';
                 
                 const isOwn = msg.userId === currentUser.id;
-                // Используем аватарку из сообщения или генерируем новую
                 const avatar = msg.avatar || getAnonymousAvatar(msg.username);
+                
+                let contentHtml = '';
+                if (msg.image) {
+                    contentHtml += `<img src="${msg.image}" class="message-image" onclick="openImagePreview('${msg.image}')">`;
+                }
+                if (msg.text) {
+                    contentHtml += `<div class="message-text">${escapeHtml(msg.text)}</div>`;
+                }
                 
                 return `
                     <div class="message ${isOwn ? 'own' : ''}" data-key="${msg.firebaseKey}">
@@ -1411,7 +1667,7 @@
                                 <span class="message-name">${escapeHtml(msg.username)}</span>
                                 <span class="message-time">${formatTime(msg.timestamp)}</span>
                             </div>
-                            <div class="message-text">${escapeHtml(msg.text)}</div>
+                            ${contentHtml}
                         </div>
                         ${isOwn ? `
                             <div class="message-actions">
@@ -1433,14 +1689,277 @@
             
             chatMessagesRef.child(key).update({
                 deleted: true,
-                text: 'Сообщение удалено'
+                text: 'Сообщение удалено',
+                image: null
             });
             
             showNotification('Сообщение удалено', 'info');
         }
 
+        function openImagePreview(imageData) {
+            const modal = document.createElement('div');
+            modal.style.cssText = `
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                background: rgba(0,0,0,0.9);
+                z-index: 3000;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                cursor: pointer;
+            `;
+            modal.innerHTML = `
+                <img src="${imageData}" style="max-width: 90%; max-height: 90%; border-radius: 12px;">
+            `;
+            modal.onclick = () => modal.remove();
+            document.body.appendChild(modal);
+        }
+
         // ================================================
-        // 9. ГАЛЕРЕЯ
+        // 9. СИСТЕМА ЗВОНКОВ (WebRTC)
+        // ================================================
+
+        let peerConnection = null;
+        let localStream = null;
+        let remoteStream = null;
+        let callType = 'audio';
+        let isIncomingCall = false;
+        let callChannel = null;
+
+        const callRef = database.ref('calls');
+
+        function startCall(type) {
+            if (!privateChatWith) {
+                showNotification('Сначала выберите пользователя!', 'error');
+                return;
+            }
+
+            callType = type;
+            const user = window.appUsers.find(u => u.id === privateChatWith);
+            
+            document.getElementById('callAvatar').src = user.avatar || getAnonymousAvatar(user.username);
+            document.getElementById('callName').textContent = user.username;
+            document.getElementById('callStatus').textContent = 'Звонит...';
+            document.getElementById('acceptCallBtn').style.display = 'none';
+            document.getElementById('callModal').classList.add('active');
+            document.getElementById('callVideoContainer').style.display = type === 'video' ? 'flex' : 'none';
+
+            // Проверяем, есть ли медиаустройства
+            if (!navigator.mediaDevices) {
+                showNotification('Ваш браузер не поддерживает звонки', 'error');
+                return;
+            }
+
+            // Запрашиваем доступ к микрофону/камере
+            const constraints = type === 'video' ? 
+                { audio: true, video: true } : 
+                { audio: true, video: false };
+
+            navigator.mediaDevices.getUserMedia(constraints)
+                .then(stream => {
+                    localStream = stream;
+                    if (type === 'video') {
+                        document.getElementById('localVideo').srcObject = stream;
+                    }
+                    createCallOffer();
+                })
+                .catch(err => {
+                    showNotification('Не удалось получить доступ к микрофону/камере', 'error');
+                    endCall();
+                });
+        }
+
+        function createCallOffer() {
+            const configuration = {
+                iceServers: [
+                    { urls: 'stun:stun.l.google.com:19302' }
+                ]
+            };
+
+            peerConnection = new RTCPeerConnection(configuration);
+            
+            // Добавляем локальный поток
+            localStream.getTracks().forEach(track => {
+                peerConnection.addTrack(track, localStream);
+            });
+
+            // Обработчик удаленного потока
+            peerConnection.ontrack = (event) => {
+                remoteStream = event.streams[0];
+                document.getElementById('remoteVideo').srcObject = remoteStream;
+            };
+
+            // Создаем offer
+            peerConnection.createOffer()
+                .then(offer => {
+                    return peerConnection.setLocalDescription(offer);
+                })
+                .then(() => {
+                    const chatId = [currentUser.id, privateChatWith].sort().join('_');
+                    const callData = {
+                        from: currentUser.id,
+                        to: privateChatWith,
+                        type: callType,
+                        offer: peerConnection.localDescription,
+                        status: 'ringing',
+                        timestamp: firebase.database.ServerValue.TIMESTAMP
+                    };
+                    callRef.child(chatId).set(callData);
+                    
+                    // Слушаем ответ
+                    callRef.child(chatId).on('value', (snapshot) => {
+                        const data = snapshot.val();
+                        if (data && data.answer && data.status === 'connected') {
+                            const answer = new RTCSessionDescription(data.answer);
+                            peerConnection.setRemoteDescription(answer);
+                            document.getElementById('callStatus').textContent = 'В разговоре...';
+                            callRef.child(chatId).off();
+                        }
+                        if (data && data.status === 'ended') {
+                            endCall();
+                        }
+                    });
+                })
+                .catch(err => {
+                    showNotification('Ошибка соединения', 'error');
+                    endCall();
+                });
+        }
+
+        function acceptCall() {
+            isIncomingCall = false;
+            document.getElementById('acceptCallBtn').style.display = 'none';
+            document.getElementById('callStatus').textContent = 'Соединение...';
+
+            const chatId = [currentUser.id, privateChatWith].sort().join('_');
+            
+            const constraints = callType === 'video' ? 
+                { audio: true, video: true } : 
+                { audio: true, video: false };
+
+            navigator.mediaDevices.getUserMedia(constraints)
+                .then(stream => {
+                    localStream = stream;
+                    if (callType === 'video') {
+                        document.getElementById('localVideo').srcObject = stream;
+                    }
+                    
+                    const configuration = {
+                        iceServers: [
+                            { urls: 'stun:stun.l.google.com:19302' }
+                        ]
+                    };
+
+                    peerConnection = new RTCPeerConnection(configuration);
+                    
+                    localStream.getTracks().forEach(track => {
+                        peerConnection.addTrack(track, localStream);
+                    });
+
+                    peerConnection.ontrack = (event) => {
+                        remoteStream = event.streams[0];
+                        document.getElementById('remoteVideo').srcObject = remoteStream;
+                    };
+
+                    // Получаем offer из Firebase
+                    callRef.child(chatId).once('value', (snapshot) => {
+                        const data = snapshot.val();
+                        if (data && data.offer) {
+                            const offer = new RTCSessionDescription(data.offer);
+                            peerConnection.setRemoteDescription(offer)
+                                .then(() => {
+                                    return peerConnection.createAnswer();
+                                })
+                                .then(answer => {
+                                    return peerConnection.setLocalDescription(answer);
+                                })
+                                .then(() => {
+                                    callRef.child(chatId).update({
+                                        answer: peerConnection.localDescription,
+                                        status: 'connected'
+                                    });
+                                    document.getElementById('callStatus').textContent = 'В разговоре...';
+                                });
+                        }
+                    });
+
+                    // Слушаем завершение звонка
+                    callRef.child(chatId).on('value', (snapshot) => {
+                        const data = snapshot.val();
+                        if (data && data.status === 'ended') {
+                            endCall();
+                        }
+                    });
+                })
+                .catch(err => {
+                    showNotification('Не удалось получить доступ к микрофону/камере', 'error');
+                    endCall();
+                });
+        }
+
+        function endCall() {
+            if (localStream) {
+                localStream.getTracks().forEach(track => track.stop());
+                localStream = null;
+            }
+            if (peerConnection) {
+                peerConnection.close();
+                peerConnection = null;
+            }
+            
+            const chatId = privateChatWith ? [currentUser.id, privateChatWith].sort().join('_') : null;
+            if (chatId) {
+                callRef.child(chatId).update({ status: 'ended' });
+                callRef.child(chatId).off();
+            }
+            
+            document.getElementById('callModal').classList.remove('active');
+            document.getElementById('callVideoContainer').style.display = 'none';
+            document.getElementById('localVideo').srcObject = null;
+            document.getElementById('remoteVideo').srcObject = null;
+            isIncomingCall = false;
+        }
+
+        function toggleMute() {
+            if (localStream) {
+                const audioTrack = localStream.getAudioTracks()[0];
+                if (audioTrack) {
+                    audioTrack.enabled = !audioTrack.enabled;
+                    document.getElementById('muteBtn').innerHTML = audioTrack.enabled ? 
+                        '<i class="fas fa-microphone"></i>' : 
+                        '<i class="fas fa-microphone-slash"></i>';
+                }
+            }
+        }
+
+        // Слушаем входящие звонки
+        function listenIncomingCalls() {
+            callRef.on('child_added', (snapshot) => {
+                const data = snapshot.val();
+                if (data && data.to === currentUser.id && data.status === 'ringing') {
+                    isIncomingCall = true;
+                    privateChatWith = data.from;
+                    callType = data.type;
+                    callChannel = snapshot.key;
+                    
+                    const user = window.appUsers.find(u => u.id === data.from);
+                    if (user) {
+                        document.getElementById('callAvatar').src = user.avatar || getAnonymousAvatar(user.username);
+                        document.getElementById('callName').textContent = user.username;
+                        document.getElementById('callStatus').textContent = 'Входящий звонок...';
+                        document.getElementById('acceptCallBtn').style.display = 'flex';
+                        document.getElementById('callModal').classList.add('active');
+                        document.getElementById('callVideoContainer').style.display = callType === 'video' ? 'flex' : 'none';
+                    }
+                }
+            });
+        }
+
+        // ================================================
+        // 10. ГАЛЕРЕЯ
         // ================================================
 
         function renderGallery() {
@@ -1567,7 +2086,7 @@
         });
 
         // ================================================
-        // 10. НАВИГАЦИЯ
+        // 11. НАВИГАЦИЯ
         // ================================================
 
         function showView(viewId) {
@@ -1585,6 +2104,12 @@
             if (targetNav) targetNav.classList.add('active');
             
             if (viewId === 'gallery') renderGallery();
+            
+            // Скрываем кнопки звонка если не в приватном чате
+            if (viewId !== 'private') {
+                document.getElementById('audioCallBtn').style.display = 'none';
+                document.getElementById('videoCallBtn').style.display = 'none';
+            }
         }
 
         function showNotification(message, type = 'info') {
@@ -1596,7 +2121,7 @@
         }
 
         // ================================================
-        // 11. ИНИЦИАЛИЗАЦИЯ
+        // 12. ИНИЦИАЛИЗАЦИЯ
         // ================================================
 
         function initEvents() {
@@ -1610,6 +2135,8 @@
                             document.getElementById('privateAvatar').src = '';
                             document.getElementById('privateInput').disabled = true;
                             document.getElementById('sendPrivateBtn').disabled = true;
+                            document.getElementById('audioCallBtn').style.display = 'none';
+                            document.getElementById('videoCallBtn').style.display = 'none';
                             document.getElementById('privateMessages').innerHTML = `
                                 <div style="text-align:center; padding:40px; color:#999;">
                                     Найдите пользователя в поиске слева и начните общение 💬
@@ -1701,6 +2228,7 @@
                     showView('chat');
                     listenMessages();
                     listenPrivateMessages();
+                    listenIncomingCalls();
                 } else {
                     showAuthModal();
                 }
@@ -1710,7 +2238,7 @@
         }
 
         // ================================================
-        // 12. ЗАПУСК
+        // 13. ЗАПУСК
         // ================================================
 
         document.addEventListener('DOMContentLoaded', function() {
@@ -1724,6 +2252,7 @@
             if (currentUser) {
                 localStorage.setItem('roma_current_user', JSON.stringify(currentUser));
             }
+            endCall();
         });
     </script>
 </body>
