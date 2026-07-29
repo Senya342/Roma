@@ -3,9 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
-    <title>Roma - Мессенджер с профилями</title>
+    <title>Roma - Полноценный мессенджер</title>
     <style>
-        /* ... все стили остаются без изменений ... */
+        /* ... весь CSS тот же, что был, но с добавлениями для новых функций ... */
         * {
             margin: 0;
             padding: 0;
@@ -587,7 +587,6 @@
             border: 2px solid #1E88E5;
         }
 
-        /* Profile Modal */
         .profile-modal {
             max-width: 500px;
             width: 90%;
@@ -610,6 +609,23 @@
             font-size: 48px;
             font-weight: 700;
             color: white;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            position: relative;
+        }
+
+        .profile-modal .profile-avatar:hover::after {
+            content: '📷 Сменить фото';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: rgba(0,0,0,0.7);
+            color: white;
+            font-size: 12px;
+            padding: 8px;
+            border-radius: 0 0 50% 50%;
+            display: block;
         }
 
         .profile-modal .profile-name {
@@ -618,9 +634,34 @@
             margin-bottom: 5px;
         }
 
+        .profile-modal .profile-clan {
+            display: inline-block;
+            padding: 4px 16px;
+            border-radius: 20px;
+            font-size: 14px;
+            font-weight: 600;
+            margin: 5px 0 10px;
+        }
+
+        .profile-modal .profile-clan.Ranalda { background: #ffd70020; color: #ffd700; border: 1px solid #ffd700; }
+        .profile-modal .profile-clan.Foplouu { background: #9b59b620; color: #9b59b6; border: 1px solid #9b59b6; }
+        .profile-modal .profile-clan.GGhost { background: #2ecc7120; color: #2ecc71; border: 1px solid #2ecc71; }
+        .profile-modal .profile-clan.Senya { background: #e74c3c20; color: #e74c3c; border: 1px solid #e74c3c; }
+        .profile-modal .profile-clan.HZ { background: #34495e20; color: #34495e; border: 1px solid #34495e; }
+        .profile-modal .profile-clan.Kolibri { background: #f39c1220; color: #f39c12; border: 1px solid #f39c12; }
+
         .profile-modal .profile-status {
             color: #7f8c8d;
             margin-bottom: 15px;
+        }
+
+        .profile-modal .profile-bio {
+            background: #f5f7fa;
+            padding: 12px;
+            border-radius: 12px;
+            margin: 10px 0;
+            font-style: italic;
+            color: #555;
         }
 
         .profile-modal .profile-stats {
@@ -678,6 +719,11 @@
 
         .profile-modal .profile-actions .call-btn-modal {
             background: #4caf50;
+            color: white;
+        }
+
+        .profile-modal .profile-actions .friend-btn {
+            background: #ff9800;
             color: white;
         }
 
@@ -796,7 +842,7 @@
             margin: 0 auto;
         }
 
-        .profile-avatar {
+        .profile-avatar-main {
             width: 120px;
             height: 120px;
             border-radius: 50%;
@@ -810,6 +856,23 @@
             font-weight: 700;
             color: white;
             margin: 0 auto 20px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            position: relative;
+        }
+
+        .profile-avatar-main:hover::after {
+            content: '📷 Сменить';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: rgba(0,0,0,0.7);
+            color: white;
+            font-size: 12px;
+            padding: 8px;
+            border-radius: 0 0 50% 50%;
+            display: block;
         }
 
         .profile-name {
@@ -817,6 +880,22 @@
             font-weight: 700;
             margin-bottom: 10px;
         }
+
+        .profile-clan-display {
+            display: inline-block;
+            padding: 4px 16px;
+            border-radius: 20px;
+            font-size: 14px;
+            font-weight: 600;
+            margin-bottom: 10px;
+        }
+
+        .profile-clan-display.Ranalda { background: #ffd70020; color: #ffd700; border: 1px solid #ffd700; }
+        .profile-clan-display.Foplouu { background: #9b59b620; color: #9b59b6; border: 1px solid #9b59b6; }
+        .profile-clan-display.GGhost { background: #2ecc7120; color: #2ecc71; border: 1px solid #2ecc71; }
+        .profile-clan-display.Senya { background: #e74c3c20; color: #e74c3c; border: 1px solid #e74c3c; }
+        .profile-clan-display.HZ { background: #34495e20; color: #34495e; border: 1px solid #34495e; }
+        .profile-clan-display.Kolibri { background: #f39c1220; color: #f39c12; border: 1px solid #f39c12; }
 
         .profile-status {
             color: #7f8c8d;
@@ -831,6 +910,13 @@
             border-radius: 8px;
             cursor: pointer;
             font-size: 16px;
+            margin: 5px;
+            transition: all 0.2s ease;
+        }
+
+        .edit-profile-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(30,136,229,0.3);
         }
 
         .modal {
@@ -917,13 +1003,20 @@
 
         #uploadForm input,
         #uploadForm textarea,
-        #editProfileForm input {
+        #editProfileForm input,
+        #editProfileForm select,
+        #editProfileForm textarea {
             width: 100%;
             margin: 10px 0;
             padding: 10px;
             border: 1px solid #e1e8ed;
             border-radius: 8px;
             font-size: 14px;
+        }
+
+        #editProfileForm select {
+            appearance: auto;
+            cursor: pointer;
         }
 
         .like-btn {
@@ -1305,15 +1398,36 @@
         </div>
     </div>
 
+    <!-- Модальное окно редактирования профиля (расширенное) -->
     <div id="editProfileModal" class="modal">
         <div class="modal-content">
-            <h2>Редактировать профиль</h2>
-            <form id="editProfileForm">
-                <label>Имя:</label>
+            <h2>✏️ Редактировать профиль</h2>
+            <form id="editProfileForm" enctype="multipart/form-data">
+                <label>👤 Имя:</label>
                 <input type="text" id="editName" required>
-                <label>Статус:</label>
+                
+                <label>📝 Статус:</label>
                 <input type="text" id="editStatus" placeholder="Расскажите о себе...">
-                <button type="submit">Сохранить</button>
+                
+                <label>📖 О себе (биография):</label>
+                <textarea id="editBio" placeholder="Напишите немного о себе..." rows="3"></textarea>
+                
+                <label>🏰 Клан:</label>
+                <select id="editClan">
+                    <option value="">Без клана</option>
+                    <option value="Ranalda">⚔️ Ranalda</option>
+                    <option value="Foplouu">🌙 Foplouu</option>
+                    <option value="GGhost">👻 GGhost</option>
+                    <option value="Senya">🔥 Senya</option>
+                    <option value="HZ">💀 HZ</option>
+                    <option value="Kolibri">🕊️ Kolibri</option>
+                </select>
+                
+                <label>📷 Фото профиля:</label>
+                <input type="file" id="editAvatarFile" accept="image/*">
+                <p style="font-size: 12px; color: #999; margin-top: -5px;">Выберите изображение для аватарки</p>
+                
+                <button type="submit">💾 Сохранить изменения</button>
             </form>
         </div>
     </div>
@@ -1330,7 +1444,7 @@
         // 1. НАСТРОЙКИ FIREBASE
         // ================================================
         const firebaseConfig = {
-         apiKey: "AIzaSyDU3iCDKldEm-FrLtWbgaESeN1Pew6NOBg",
+           apiKey: "AIzaSyDU3iCDKldEm-FrLtWbgaESeN1Pew6NOBg",
             authDomain: "romamessenger-bbc6a.firebaseapp.com",
             databaseURL: "https://romamessenger-bbc6a-default-rtdb.firebaseio.com",
             projectId: "romamessenger-bbc6a",
@@ -1345,6 +1459,15 @@
         // ================================================
         // 2. ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ
         // ================================================
+
+        const clanColors = {
+            'Ranalda': '#ffd700',
+            'Foplouu': '#9b59b6',
+            'GGhost': '#2ecc71',
+            'Senya': '#e74c3c',
+            'HZ': '#34495e',
+            'Kolibri': '#f39c12'
+        };
 
         function getColorFromName(name) {
             const colors = [
@@ -1366,6 +1489,7 @@
         }
 
         function escapeHtml(text) {
+            if (!text) return '';
             const div = document.createElement('div');
             div.textContent = text;
             return div.innerHTML;
@@ -1443,8 +1567,14 @@
                     password,
                     avatar: getAnonymousAvatar(username),
                     status: 'Новый пользователь!',
+                    bio: 'Привет! Я здесь, чтобы общаться! 😊',
+                    clan: '',
                     online: true,
-                    lastSeen: new Date()
+                    lastSeen: new Date(),
+                    wins: 0,
+                    losses: 0,
+                    totalTrophies: 0,
+                    friends: []
                 };
                 window.appUsers.push(newUser);
                 saveUsers();
@@ -1460,7 +1590,7 @@
         }
 
         // ================================================
-        // 5. ПРОФИЛЬ ПОЛЬЗОВАТЕЛЯ
+        // 5. ПРОФИЛЬ ПОЛЬЗОВАТЕЛЯ (РАСШИРЕННЫЙ)
         // ================================================
 
         function loadUserData() {
@@ -1471,13 +1601,19 @@
         }
 
         function renderProfile() {
+            const clanDisplay = currentUser.clan ? 
+                `<div class="profile-clan-display ${currentUser.clan}" style="background: ${clanColors[currentUser.clan]}20; color: ${clanColors[currentUser.clan]}; border: 1px solid ${clanColors[currentUser.clan]};">⚔️ Клан: ${currentUser.clan}</div>` : 
+                '<div class="profile-clan-display" style="background: #ecf0f1; color: #7f8c8d; border: 1px solid #ddd;">Без клана</div>';
+            
             const profileHtml = `
                 <div class="profile-card">
-                    <div class="profile-avatar" style="background: ${getColorFromName(currentUser.username)}; width: 120px; height: 120px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 48px; color: white; margin: 0 auto 20px; border: 4px solid #1E88E5;">
-                        ${currentUser.username.charAt(0).toUpperCase()}
+                    <div class="profile-avatar-main" style="background: ${getColorFromName(currentUser.username)}; width: 120px; height: 120px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 48px; color: white; margin: 0 auto 20px; border: 4px solid #1E88E5; background-image: url('${currentUser.avatar || ''}'); background-size: cover; background-position: center; ${currentUser.avatar && !currentUser.avatar.startsWith('data:image/svg') ? '' : 'background: ' + getColorFromName(currentUser.username) + ';'}" onclick="document.getElementById('editAvatarFile').click()">
+                        ${currentUser.avatar && !currentUser.avatar.startsWith('data:image/svg') ? '' : currentUser.username.charAt(0).toUpperCase()}
                     </div>
                     <h2 class="profile-name">${currentUser.username}</h2>
-                    <p class="profile-status">${currentUser.status}</p>
+                    ${clanDisplay}
+                    <p class="profile-status">${currentUser.status || 'Нет статуса'}</p>
+                    ${currentUser.bio ? `<div class="profile-bio">${escapeHtml(currentUser.bio)}</div>` : ''}
                     <button class="edit-profile-btn" onclick="openEditProfile()">
                         <i class="fas fa-edit"></i> Редактировать профиль
                     </button>
@@ -1488,19 +1624,51 @@
 
         window.openEditProfile = function() {
             document.getElementById('editName').value = currentUser.username;
-            document.getElementById('editStatus').value = currentUser.status;
+            document.getElementById('editStatus').value = currentUser.status || '';
+            document.getElementById('editBio').value = currentUser.bio || '';
+            document.getElementById('editClan').value = currentUser.clan || '';
             document.getElementById('editProfileModal').classList.add('active');
         };
 
         document.getElementById('editProfileForm').addEventListener('submit', (e) => {
             e.preventDefault();
+            
             const newName = document.getElementById('editName').value.trim();
             const newStatus = document.getElementById('editStatus').value.trim();
+            const newBio = document.getElementById('editBio').value.trim();
+            const newClan = document.getElementById('editClan').value;
+            const avatarFile = document.getElementById('editAvatarFile').files[0];
             
+            // Проверяем, что имя не пустое
+            if (!newName) {
+                showNotification('Имя не может быть пустым!', 'error');
+                return;
+            }
+            
+            // Обновляем данные пользователя
             currentUser.username = newName;
             currentUser.status = newStatus;
-            currentUser.avatar = getAnonymousAvatar(newName);
+            currentUser.bio = newBio;
+            currentUser.clan = newClan;
             
+            // Если загружено новое фото
+            if (avatarFile) {
+                const reader = new FileReader();
+                reader.onload = function(event) {
+                    currentUser.avatar = event.target.result;
+                    saveUserData();
+                };
+                reader.readAsDataURL(avatarFile);
+            } else {
+                // Если фото не загружено, но имя изменилось - обновляем аватарку
+                if (currentUser.avatar && currentUser.avatar.startsWith('data:image/svg')) {
+                    currentUser.avatar = getAnonymousAvatar(newName);
+                }
+                saveUserData();
+            }
+        });
+
+        function saveUserData() {
             const userIndex = window.appUsers.findIndex(u => u.id === currentUser.id);
             if (userIndex !== -1) {
                 window.appUsers[userIndex] = { ...currentUser };
@@ -1510,14 +1678,13 @@
             loadUserData();
             document.getElementById('editProfileModal').classList.remove('active');
             showNotification('Профиль обновлен!', 'success');
-        });
+        }
 
         // ================================================
-        // 6. ОТКРЫТИЕ ПРОФИЛЯ ПОЛЬЗОВАТЕЛЯ (ИСПРАВЛЕННОЕ)
+        // 6. ОТКРЫТИЕ ПРОФИЛЯ ПОЛЬЗОВАТЕЛЯ (РАСШИРЕННОЕ)
         // ================================================
 
         window.openUserProfile = function(userId) {
-            // Проверяем, что userId передан
             if (!userId) {
                 showNotification('Ошибка: пользователь не найден', 'error');
                 return;
@@ -1531,6 +1698,11 @@
             
             const isOwnProfile = user.id === currentUser.id;
             const avatar = user.avatar || getAnonymousAvatar(user.username);
+            const isFriend = currentUser.friends && currentUser.friends.includes(user.id);
+            
+            const clanDisplay = user.clan ? 
+                `<div class="profile-clan ${user.clan}" style="background: ${clanColors[user.clan]}20; color: ${clanColors[user.clan]}; border: 1px solid ${clanColors[user.clan]};">⚔️ Клан: ${user.clan}</div>` : 
+                '<div class="profile-clan" style="background: #ecf0f1; color: #7f8c8d; border: 1px solid #ddd;">Без клана</div>';
             
             const wins = user.wins || 0;
             const losses = user.losses || 0;
@@ -1539,11 +1711,13 @@
             
             const profileHtml = `
                 <div class="profile-card">
-                    <div class="profile-avatar" style="background: ${getColorFromName(user.username)}; width: 120px; height: 120px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 48px; color: white; margin: 0 auto 20px; border: 4px solid #1E88E5;">
-                        ${user.username.charAt(0).toUpperCase()}
+                    <div class="profile-avatar" style="background: ${getColorFromName(user.username)}; width: 120px; height: 120px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 48px; color: white; margin: 0 auto 20px; border: 4px solid #1E88E5; background-image: url('${avatar}'); background-size: cover; background-position: center; ${avatar && !avatar.startsWith('data:image/svg') ? '' : 'background: ' + getColorFromName(user.username) + ';'};">
+                        ${avatar && !avatar.startsWith('data:image/svg') ? '' : user.username.charAt(0).toUpperCase()}
                     </div>
                     <h2 class="profile-name">${escapeHtml(user.username)}</h2>
+                    ${clanDisplay}
                     <p class="profile-status">${escapeHtml(user.status || 'Нет статуса')}</p>
+                    ${user.bio ? `<div class="profile-bio">${escapeHtml(user.bio)}</div>` : ''}
                     <div class="profile-stats">
                         <div>
                             <div class="number">${user.totalTrophies || 0}</div>
@@ -1569,6 +1743,9 @@
                             <button class="call-btn-modal" onclick="startPrivateCall('video')" style="background: #1E88E5;">
                                 📹
                             </button>
+                            <button class="friend-btn" onclick="${isFriend ? `removeFriend('${user.id}')` : `addFriend('${user.id}')`}">
+                                ${isFriend ? '❤️ В друзьях' : '🤝 Добавить в друзья'}
+                            </button>
                         ` : `
                             <button class="close-btn" onclick="closeUserProfile()" style="flex: 1;">
                                 Закрыть
@@ -1582,7 +1759,6 @@
             document.getElementById('userProfileModal').classList.add('active');
         };
 
-        // Функция для открытия профиля из шапки чата
         window.openUserProfileFromChat = function() {
             if (privateChatWith) {
                 openUserProfile(privateChatWith);
@@ -1605,7 +1781,36 @@
         };
 
         // ================================================
-        // 7. ПОИСК ПОЛЬЗОВАТЕЛЕЙ
+        // 7. СИСТЕМА ДРУЗЕЙ
+        // ================================================
+
+        function addFriend(userId) {
+            if (!currentUser.friends) currentUser.friends = [];
+            if (currentUser.friends.includes(userId)) {
+                showNotification('Уже в друзьях!', 'info');
+                return;
+            }
+            
+            currentUser.friends.push(userId);
+            saveUsers();
+            showNotification('Пользователь добавлен в друзья! ❤️', 'success');
+            
+            // Обновляем профиль, если он открыт
+            openUserProfile(userId);
+        }
+
+        function removeFriend(userId) {
+            if (!currentUser.friends) return;
+            currentUser.friends = currentUser.friends.filter(id => id !== userId);
+            saveUsers();
+            showNotification('Пользователь удалён из друзей', 'info');
+            
+            // Обновляем профиль, если он открыт
+            openUserProfile(userId);
+        }
+
+        // ================================================
+        // 8. ПОИСК ПОЛЬЗОВАТЕЛЕЙ
         // ================================================
 
         function searchUsers() {
@@ -1627,25 +1832,27 @@
                 return;
             }
             
-            results.innerHTML = users.map(user => `
-                <div class="user-list-item" onclick="openUserProfile('${user.id}')">
-                    <img src="${user.avatar || getAnonymousAvatar(user.username)}" alt="">
-                    <div>
-                        <div class="name">${escapeHtml(user.username)}</div>
-                        <div class="online-status ${user.online ? 'online' : ''}">${user.online ? '🟢 Онлайн' : '⚫ Оффлайн'}</div>
+            results.innerHTML = users.map(user => {
+                const isFriend = currentUser.friends && currentUser.friends.includes(user.id);
+                return `
+                    <div class="user-list-item" onclick="openUserProfile('${user.id}')">
+                        <img src="${user.avatar || getAnonymousAvatar(user.username)}" alt="">
+                        <div>
+                            <div class="name">${escapeHtml(user.username)} ${isFriend ? '❤️' : ''}</div>
+                            <div class="online-status ${user.online ? 'online' : ''}">${user.online ? '🟢 Онлайн' : '⚫ Оффлайн'}</div>
+                        </div>
                     </div>
-                </div>
-            `).join('');
+                `;
+            }).join('');
         }
 
         // ================================================
-        // 8. ЛИЧНЫЕ СООБЩЕНИЯ
+        // 9. ЛИЧНЫЕ СООБЩЕНИЯ
         // ================================================
 
         const privateMessagesRef = database.ref('privateMessages');
 
         function startPrivateChat(userId) {
-            // Проверяем, что userId передан
             if (!userId) {
                 showNotification('Ошибка: пользователь не найден', 'error');
                 return;
@@ -1675,6 +1882,10 @@
             document.getElementById('searchUsers').value = '';
             document.getElementById('searchResults').innerHTML = '';
         }
+
+        // ================================================
+        // 10. ОСТАЛЬНЫЕ ФУНКЦИИ (ЧАТЫ, ЗВОНКИ, ГАЛЕРЕЯ)
+        // ================================================
 
         function sendPrivateMessage(text, imageData = null) {
             if (!text.trim() && !imageData) return;
@@ -1769,7 +1980,6 @@
                         contentHtml += `<div class="message-text">${escapeHtml(msg.text)}</div>`;
                     }
                     
-                    // Проверяем, что from есть перед вызовом openUserProfile
                     const userId = msg.from || '';
                     
                     return `
@@ -1811,7 +2021,7 @@
         }
 
         // ================================================
-        // 9. ОБЩИЙ ЧАТ
+        // 11. ОБЩИЙ ЧАТ
         // ================================================
 
         const chatMessagesRef = database.ref('chatMessages');
@@ -1941,7 +2151,7 @@
         }
 
         // ================================================
-        // 10. СИСТЕМА ЗВОНКОВ (WebRTC)
+        // 12. СИСТЕМА ЗВОНКОВ (WebRTC) - УПРОЩЁННАЯ
         // ================================================
 
         let peerConnection = null;
@@ -1949,7 +2159,6 @@
         let remoteStream = null;
         let callType = 'audio';
         let isIncomingCall = false;
-        let callChannel = null;
         let isGroupCall = false;
 
         const callRef = database.ref('calls');
@@ -2174,7 +2383,6 @@
                     isIncomingCall = true;
                     privateChatWith = data.from;
                     callType = data.type;
-                    callChannel = snapshot.key;
                     isGroupCall = data.isGroup || false;
                     
                     const user = window.appUsers.find(u => u.id === data.from);
@@ -2191,7 +2399,7 @@
         }
 
         // ================================================
-        // 11. ГАЛЕРЕЯ
+        // 13. ГАЛЕРЕЯ
         // ================================================
 
         function renderGallery() {
@@ -2318,7 +2526,7 @@
         });
 
         // ================================================
-        // 12. НАВИГАЦИЯ
+        // 14. НАВИГАЦИЯ
         // ================================================
 
         function showView(viewId) {
@@ -2346,7 +2554,7 @@
         }
 
         // ================================================
-        // 13. ИНИЦИАЛИЗАЦИЯ
+        // 15. ИНИЦИАЛИЗАЦИЯ
         // ================================================
 
         function initEvents() {
@@ -2463,7 +2671,7 @@
         }
 
         // ================================================
-        // 14. ЗАПУСК
+        // 16. ЗАПУСК
         // ================================================
 
         document.addEventListener('DOMContentLoaded', function() {
