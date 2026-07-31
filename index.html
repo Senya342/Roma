@@ -285,6 +285,7 @@
             padding: 2px 6px;
             box-shadow: 0 2px 8px rgba(0,0,0,0.1);
             gap: 4px;
+            z-index: 10;
         }
         .message.own .message-actions { right: auto; left: 0; }
         .message-actions button {
@@ -1068,12 +1069,49 @@
         </div>
     </div>
 
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
+
     <!-- Font Awesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
     <script>
         // ================================================
-        // 1. ДАННЫЕ (ПОЛНОСТЬЮ НА LOCALSTORAGE)
+        // 1. НАСТРОЙКИ FIREBASE (ВСТАВЬТЕ СВОИ ДАННЫЕ)
+        // ================================================
+        const firebaseConfig = {
+      apiKey: "AIzaSyDU3iCDKldEm-FrLtWbgaESeN1Pew6NOBg",
+            authDomain: "romamessenger-bbc6a.firebaseapp.com",
+            databaseURL: "https://romamessenger-bbc6a-default-rtdb.firebaseio.com",
+            projectId: "romamessenger-bbc6a",
+            storageBucket: "romamessenger-bbc6a.firebasestorage.app",
+            messagingSenderId: "91095345562",
+            appId: "1:91095345562:web:51862dac24662cee2cb223"
+        };
+
+        // ================================================
+        // 2. ИНИЦИАЛИЗАЦИЯ FIREBASE
+        // ================================================
+        let useFirebase = false;
+        let firebaseInitialized = false;
+
+        try {
+            if (firebaseConfig.apiKey && firebaseConfig.apiKey !== "AIzaSyDU3iCDKldEm-FrLtWbgaESeN1Pew6NOBg") {
+                firebase.initializeApp(firebaseConfig);
+                useFirebase = true;
+                firebaseInitialized = true;
+                console.log('🔥 Firebase подключен!');
+            } else {
+                console.log('⚠️ Firebase не настроен. Используется localStorage.');
+            }
+        } catch(e) {
+            console.log('⚠️ Ошибка Firebase:', e.message);
+            console.log('⚠️ Используется localStorage.');
+        }
+
+        // ================================================
+        // 3. ДАННЫЕ
         // ================================================
         let currentUser = null;
         let currentImageView = null;
@@ -1081,9 +1119,19 @@
         let privateChatWith = null;
         let appUsers = [];
         let chatMessages = [];
+        let privateMessages = [];
+
+        const clanColors = {
+            'Ranalda': '#ffd700',
+            'Foplouu': '#9b59b6',
+            'GGhost': '#2ecc71',
+            'Senya': '#e74c3c',
+            'HZ': '#34495e',
+            'Kolibri': '#f39c12'
+        };
 
         // ================================================
-        // 2. ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ
+        // 4. ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ
         // ================================================
         function getColorFromName(name) {
             const colors = ['#e74c3c','#3498db','#2ecc71','#f39c12','#9b59b6','#1abc9c','#e67e22','#e84393','#00b894','#6c5ce7'];
@@ -1112,7 +1160,7 @@
         }
 
         // ================================================
-        // 3. МОБИЛЬНОЕ МЕНЮ
+        // 5. МОБИЛЬНОЕ МЕНЮ
         // ================================================
         function toggleMobileMenu() {
             document.getElementById('sidebar').classList.toggle('open');
@@ -1124,7 +1172,7 @@
         }
 
         // ================================================
-        // 4. АВТОРИЗАЦИЯ
+        // 6. АВТОРИЗАЦИЯ
         // ================================================
         function initData() {
             let users = localStorage.getItem('roma_users');
@@ -1142,6 +1190,14 @@
             } else {
                 chatMessages = JSON.parse(messages);
             }
+            
+            let pMessages = localStorage.getItem('roma_private_messages');
+            if (!pMessages) {
+                localStorage.setItem('roma_private_messages', JSON.stringify([]));
+                privateMessages = [];
+            } else {
+                privateMessages = JSON.parse(pMessages);
+            }
         }
 
         function saveUsers() { 
@@ -1150,6 +1206,10 @@
         
         function saveMessages() {
             localStorage.setItem('roma_chat_messages', JSON.stringify(chatMessages));
+        }
+        
+        function savePrivateMessages() {
+            localStorage.setItem('roma_private_messages', JSON.stringify(privateMessages));
         }
 
         function showAuthModal() { document.getElementById('authModal').classList.add('active'); }
@@ -1168,8 +1228,13 @@
                     hideAuthModal();
                     loadUserData();
                     showView('chat');
-                    renderChatMessages();
-                    renderPrivateMessages();
+                    if (useFirebase && firebaseInitialized) {
+                        listenFirebaseMessages();
+                        listenFirebasePrivateMessages();
+                    } else {
+                        renderChatMessages();
+                        renderPrivateMessages();
+                    }
                     showNotification('Добро пожаловать в Roma!', 'success');
                     closeMobileMenu();
                 } else showNotification('Неверное имя или пароль', 'error');
@@ -1196,15 +1261,21 @@
                 hideAuthModal();
                 loadUserData();
                 showView('chat');
-                renderChatMessages();
-                renderPrivateMessages();
+                if (useFirebase && firebaseInitialized) {
+                    syncUsersToFirebase();
+                    listenFirebaseMessages();
+                    listenFirebasePrivateMessages();
+                } else {
+                    renderChatMessages();
+                    renderPrivateMessages();
+                }
                 showNotification('Регистрация успешна!', 'success');
                 closeMobileMenu();
             }
         }
 
         // ================================================
-        // 5. ПРОФИЛЬ
+        // 7. ПРОФИЛЬ
         // ================================================
         function loadUserData() {
             document.getElementById('userStatusBadge').textContent = currentUser.username;
@@ -1256,13 +1327,14 @@
             const idx = appUsers.findIndex(u => u.id === currentUser.id);
             if (idx !== -1) appUsers[idx] = { ...currentUser };
             saveUsers();
+            if (useFirebase && firebaseInitialized) syncUsersToFirebase();
             loadUserData();
             document.getElementById('editProfileModal').classList.remove('active');
             showNotification('Профиль обновлен!', 'success');
         });
 
         // ================================================
-        // 6. ПРОФИЛЬ ПОЛЬЗОВАТЕЛЯ
+        // 8. ПРОФИЛЬ ПОЛЬЗОВАТЕЛЯ
         // ================================================
         window.openUserProfile = function(userId) {
             if (!userId) { showNotification('Ошибка: пользователь не найден', 'error'); return; }
@@ -1311,7 +1383,7 @@
         }
 
         // ================================================
-        // 7. ПОИСК
+        // 9. ПОИСК
         // ================================================
         function searchUsers() {
             const query = document.getElementById('searchUsers').value.trim().toLowerCase();
@@ -1329,9 +1401,53 @@
         }
 
         // ================================================
-        // 8. ОБЩИЙ ЧАТ (РАБОТАЕТ НА LOCALSTORAGE)
+        // 10. ОБЩИЙ ЧАТ (С FIREBASE)
         // ================================================
-        function sendMessageToChat(text, imageData = null) {
+        let chatMessagesRef = null;
+        let privateMessagesRef = null;
+        let usersRef = null;
+
+        if (useFirebase && firebaseInitialized) {
+            const database = firebase.database();
+            chatMessagesRef = database.ref('chatMessages');
+            privateMessagesRef = database.ref('privateMessages');
+            usersRef = database.ref('users');
+        }
+
+        // Отправка в Firebase
+        function sendMessageToFirebase(text, imageData = null) {
+            if (!text.trim() && !imageData) {
+                showNotification('Введите сообщение!', 'error');
+                return;
+            }
+            if (!currentUser) {
+                showNotification('Сначала войдите в аккаунт!', 'error');
+                return;
+            }
+            
+            const messageData = {
+                userId: currentUser.id,
+                username: currentUser.username,
+                avatar: currentUser.avatar || getAnonymousAvatar(currentUser.username),
+                text: text.trim() || '',
+                image: imageData || null,
+                timestamp: firebase.database.ServerValue.TIMESTAMP,
+                deleted: false
+            };
+            
+            chatMessagesRef.push(messageData)
+                .then(() => {
+                    document.getElementById('chatInput').value = '';
+                    showNotification('Сообщение отправлено! ✅', 'success');
+                })
+                .catch((err) => {
+                    console.error('Ошибка отправки:', err);
+                    showNotification('Ошибка отправки', 'error');
+                });
+        }
+
+        // Отправка в localStorage
+        function sendMessageToLocal(text, imageData = null) {
             if (!text.trim() && !imageData) {
                 showNotification('Введите сообщение!', 'error');
                 return;
@@ -1359,62 +1475,43 @@
             showNotification('Сообщение отправлено! ✅', 'success');
         }
 
-        function sendChatImage(event) {
-            const file = event.target.files[0];
-            if (!file) return;
-            const reader = new FileReader();
-            reader.onload = function(e) {
-                sendMessageToChat('📷 Фото', e.target.result);
-                showNotification('Фото отправлено! 📸', 'success');
-            };
-            reader.readAsDataURL(file);
-            event.target.value = '';
-        }
-
-        function renderChatMessages() {
-            const container = document.getElementById('chatMessages');
-            if (!container) return;
-            
-            const messages = chatMessages.filter(msg => !msg.deleted);
-            
-            if (messages.length === 0) {
-                container.innerHTML = '<div style="text-align:center; padding:30px 15px; color:#999; font-size:13px;">Нет сообщений. Напишите первое! 💬</div>';
-                return;
+        // Основная функция отправки
+        function sendMessageToChat(text, imageData = null) {
+            if (useFirebase && firebaseInitialized) {
+                sendMessageToFirebase(text, imageData);
+            } else {
+                sendMessageToLocal(text, imageData);
             }
-            
-            const html = messages.map(msg => {
-                const isOwn = msg.userId === currentUser?.id;
-                const avatar = msg.avatar || getAnonymousAvatar(msg.username);
-                let content = '';
-                if (msg.image) content += `<img src="${msg.image}" class="message-image" onclick="openImagePreview('${msg.image}')">`;
-                if (msg.text) content += `<div class="message-text">${escapeHtml(msg.text)}</div>`;
-                
-                return `
-                    <div class="message ${isOwn ? 'own' : ''}">
-                        <img src="${avatar}" class="message-avatar" onclick="${msg.userId ? `openUserProfile('${msg.userId}')` : ''}">
-                        <div class="message-content">
-                            <div class="message-header">
-                                <span class="message-name" onclick="${msg.userId ? `openUserProfile('${msg.userId}')` : ''}">${escapeHtml(msg.username)}</span>
-                                <span class="message-time">${formatTime(msg.timestamp)}</span>
-                            </div>
-                            ${content}
-                        </div>
-                        ${isOwn ? `
-                            <div class="message-actions">
-                                <button onclick="deleteChatMessage('${msg.id}')" title="Удалить">
-                                    <i class="fas fa-trash"></i>
-                                </button>
-                            </div>
-                        ` : ''}
-                    </div>
-                `;
-            }).join('');
-            
-            container.innerHTML = html;
-            container.scrollTop = container.scrollHeight;
         }
 
-        function deleteChatMessage(id) {
+        // Прослушивание Firebase
+        function listenFirebaseMessages() {
+            if (!chatMessagesRef) return;
+            chatMessagesRef.orderByChild('timestamp').limitToLast(100).on('value', (snapshot) => {
+                const data = snapshot.val();
+                if (data) {
+                    const msgs = Object.entries(data).map(([k,v]) => ({ ...v, firebaseKey: k }));
+                    renderChatMessages(msgs);
+                } else {
+                    renderChatMessages([]);
+                }
+            });
+        }
+
+        // Удаление из Firebase
+        function deleteChatMessageFirebase(key) {
+            if (!confirm('Удалить это сообщение?')) return;
+            chatMessagesRef.child(key).update({ 
+                deleted: true, 
+                text: 'Сообщение удалено', 
+                image: null 
+            })
+            .then(() => showNotification('Сообщение удалено', 'info'))
+            .catch(() => showNotification('Ошибка удаления', 'error'));
+        }
+
+        // Удаление из localStorage
+        function deleteChatMessageLocal(id) {
             if (!confirm('Удалить это сообщение?')) return;
             const msg = chatMessages.find(m => m.id === id);
             if (msg) {
@@ -1427,44 +1524,98 @@
             }
         }
 
-        // ================================================
-        // 9. ЛИЧНЫЕ СООБЩЕНИЯ
-        // ================================================
-        let privateMessages = [];
-
-        function loadPrivateMessages() {
-            const saved = localStorage.getItem('roma_private_messages');
-            if (saved) {
-                privateMessages = JSON.parse(saved);
+        // Основная функция удаления
+        function deleteChatMessage(key) {
+            if (useFirebase && firebaseInitialized) {
+                deleteChatMessageFirebase(key);
             } else {
-                privateMessages = [];
+                deleteChatMessageLocal(key);
             }
         }
 
-        function savePrivateMessages() {
-            localStorage.setItem('roma_private_messages', JSON.stringify(privateMessages));
+        // Рендер чата
+        function renderChatMessages(messages = null) {
+            const container = document.getElementById('chatMessages');
+            if (!container) return;
+            
+            let msgs = messages || chatMessages;
+            msgs = msgs.filter(msg => !msg.deleted);
+            
+            if (msgs.length === 0) {
+                container.innerHTML = '<div style="text-align:center; padding:30px 15px; color:#999; font-size:13px;">Нет сообщений. Напишите первое! 💬</div>';
+                return;
+            }
+            
+            // Сортировка по времени
+            msgs.sort((a, b) => {
+                const ta = a.timestamp || 0;
+                const tb = b.timestamp || 0;
+                return ta - tb;
+            });
+            
+            const html = msgs.map(msg => {
+                const isOwn = msg.userId === currentUser?.id;
+                const avatar = msg.avatar || getAnonymousAvatar(msg.username);
+                let content = '';
+                if (msg.image) content += `<img src="${msg.image}" class="message-image" onclick="openImagePreview('${msg.image}')">`;
+                if (msg.text) content += `<div class="message-text">${escapeHtml(msg.text)}</div>`;
+                const userId = msg.userId || '';
+                const deleteId = msg.firebaseKey || msg.id;
+                
+                return `
+                    <div class="message ${isOwn ? 'own' : ''}">
+                        <img src="${avatar}" class="message-avatar" onclick="${userId ? `openUserProfile('${userId}')` : ''}">
+                        <div class="message-content">
+                            <div class="message-header">
+                                <span class="message-name" onclick="${userId ? `openUserProfile('${userId}')` : ''}">${escapeHtml(msg.username)}</span>
+                                <span class="message-time">${formatTime(msg.timestamp)}</span>
+                            </div>
+                            ${content}
+                        </div>
+                        ${isOwn ? `
+                            <div class="message-actions">
+                                <button onclick="deleteChatMessage('${deleteId}')" title="Удалить">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </div>
+                        ` : ''}
+                    </div>
+                `;
+            }).join('');
+            
+            container.innerHTML = html;
+            container.scrollTop = container.scrollHeight;
         }
 
-        function startPrivateChat(userId) {
-            if (!userId) { showNotification('Ошибка: пользователь не найден', 'error'); return; }
-            const user = appUsers.find(u => u.id === userId);
-            if (!user) { showNotification('Пользователь не найден', 'error'); return; }
-            privateChatWith = userId;
-            document.getElementById('privateUserName').textContent = user.username;
-            document.getElementById('privateAvatar').src = user.avatar || getAnonymousAvatar(user.username);
-            document.getElementById('privateInput').disabled = false;
-            document.getElementById('sendPrivateBtn').disabled = false;
-            document.getElementById('audioCallBtn').style.display = 'flex';
-            document.getElementById('privateBadge').style.display = 'none';
-            document.getElementById('privateBadge').textContent = '0';
-            showView('private');
-            renderPrivateMessages();
-            document.getElementById('searchUsers').value = '';
-            document.getElementById('searchResults').innerHTML = '';
-            closeMobileMenu();
+        // ================================================
+        // 11. ЛИЧНЫЕ СООБЩЕНИЯ (С FIREBASE)
+        // ================================================
+        function sendPrivateMessageFirebase(text, imageData = null) {
+            if (!text.trim() && !imageData) {
+                showNotification('Введите сообщение!', 'error');
+                return;
+            }
+            if (!currentUser || !privateChatWith) return;
+            
+            const chatId = [currentUser.id, privateChatWith].sort().join('_');
+            privateMessagesRef.child(chatId).push({
+                from: currentUser.id,
+                to: privateChatWith,
+                username: currentUser.username,
+                avatar: currentUser.avatar || getAnonymousAvatar(currentUser.username),
+                text: text.trim() || '',
+                image: imageData || null,
+                timestamp: firebase.database.ServerValue.TIMESTAMP,
+                deleted: false
+            })
+            .then(() => {
+                document.getElementById('privateInput').value = '';
+                showNotification('Сообщение отправлено! ✅', 'success');
+            })
+            .catch(() => showNotification('Ошибка отправки', 'error'));
         }
 
-        function sendPrivateMessage(text, imageData = null) {
+        function sendPrivateMessageLocal(text, imageData = null) {
             if (!text.trim() && !imageData) {
                 showNotification('Введите сообщение!', 'error');
                 return;
@@ -1490,23 +1641,44 @@
             showNotification('Сообщение отправлено! ✅', 'success');
         }
 
-        function sendPrivateImage(event) {
-            const file = event.target.files[0];
-            if (!file) return;
-            const reader = new FileReader();
-            reader.onload = function(e) {
-                sendPrivateMessage('📷 Фото', e.target.result);
-                showNotification('Фото отправлено! 📸', 'success');
-            };
-            reader.readAsDataURL(file);
-            event.target.value = '';
+        function sendPrivateMessage(text, imageData = null) {
+            if (useFirebase && firebaseInitialized) {
+                sendPrivateMessageFirebase(text, imageData);
+            } else {
+                sendPrivateMessageLocal(text, imageData);
+            }
+        }
+
+        function listenFirebasePrivateMessages() {
+            if (!privateMessagesRef) return;
+            privateMessagesRef.on('value', (snapshot) => {
+                const data = snapshot.val();
+                if (data) {
+                    let unread = 0;
+                    for (const [chatId, msgs] of Object.entries(data)) {
+                        const ids = chatId.split('_');
+                        if (ids.includes(currentUser.id)) {
+                            const otherId = ids.find(id => id !== currentUser.id);
+                            if (otherId && privateChatWith !== otherId) {
+                                const arr = Object.values(msgs);
+                                const last = arr[arr.length - 1];
+                                if (last && last.from === otherId && !last.deleted) unread++;
+                            }
+                        }
+                    }
+                    const badge = document.getElementById('privateBadge');
+                    if (unread > 0) { badge.textContent = unread; badge.style.display = 'block'; }
+                    else badge.style.display = 'none';
+                }
+                renderPrivateMessages();
+            });
         }
 
         function renderPrivateMessages() {
             const container = document.getElementById('privateMessages');
             if (!container || !privateChatWith) return;
             
-            const msgs = privateMessages.filter(m => 
+            let msgs = privateMessages.filter(m => 
                 !m.deleted && 
                 ((m.from === currentUser.id && m.to === privateChatWith) || 
                  (m.from === privateChatWith && m.to === currentUser.id))
@@ -1517,26 +1689,30 @@
                 return;
             }
             
+            msgs.sort((a, b) => a.timestamp - b.timestamp);
+            
             const html = msgs.map(msg => {
                 const isOwn = msg.from === currentUser.id;
                 const avatar = msg.avatar || getAnonymousAvatar(msg.username);
                 let content = '';
                 if (msg.image) content += `<img src="${msg.image}" class="message-image" onclick="openImagePreview('${msg.image}')">`;
                 if (msg.text) content += `<div class="message-text">${escapeHtml(msg.text)}</div>`;
+                const userId = msg.from || '';
+                const deleteId = msg.firebaseKey || msg.id;
                 
                 return `
                     <div class="message ${isOwn ? 'own' : ''}">
-                        <img src="${avatar}" class="message-avatar" onclick="${msg.from ? `openUserProfile('${msg.from}')` : ''}">
+                        <img src="${avatar}" class="message-avatar" onclick="${userId ? `openUserProfile('${userId}')` : ''}">
                         <div class="message-content">
                             <div class="message-header">
-                                <span class="message-name" onclick="${msg.from ? `openUserProfile('${msg.from}')` : ''}">${escapeHtml(msg.username)}</span>
+                                <span class="message-name" onclick="${userId ? `openUserProfile('${userId}')` : ''}">${escapeHtml(msg.username)}</span>
                                 <span class="message-time">${formatTime(msg.timestamp)}</span>
                             </div>
                             ${content}
                         </div>
                         ${isOwn ? `
                             <div class="message-actions">
-                                <button onclick="deletePrivateMessage('${msg.id}')" title="Удалить">
+                                <button onclick="deletePrivateMessage('${deleteId}')" title="Удалить">
                                     <i class="fas fa-trash"></i>
                                 </button>
                             </div>
@@ -1549,7 +1725,18 @@
             container.scrollTop = container.scrollHeight;
         }
 
-        function deletePrivateMessage(id) {
+        function deletePrivateMessageFirebase(key, chatId) {
+            if (!confirm('Удалить это сообщение?')) return;
+            privateMessagesRef.child(chatId).child(key).update({ 
+                deleted: true, 
+                text: 'Сообщение удалено', 
+                image: null 
+            })
+            .then(() => showNotification('Сообщение удалено', 'info'))
+            .catch(() => showNotification('Ошибка удаления', 'error'));
+        }
+
+        function deletePrivateMessageLocal(id) {
             if (!confirm('Удалить это сообщение?')) return;
             const msg = privateMessages.find(m => m.id === id);
             if (msg) {
@@ -1562,8 +1749,63 @@
             }
         }
 
+        function deletePrivateMessage(key) {
+            if (useFirebase && firebaseInitialized) {
+                const chatId = [currentUser.id, privateChatWith].sort().join('_');
+                deletePrivateMessageFirebase(key, chatId);
+            } else {
+                deletePrivateMessageLocal(key);
+            }
+        }
+
+        function startPrivateChat(userId) {
+            if (!userId) { showNotification('Ошибка: пользователь не найден', 'error'); return; }
+            const user = appUsers.find(u => u.id === userId);
+            if (!user) { showNotification('Пользователь не найден', 'error'); return; }
+            privateChatWith = userId;
+            document.getElementById('privateUserName').textContent = user.username;
+            document.getElementById('privateAvatar').src = user.avatar || getAnonymousAvatar(user.username);
+            document.getElementById('privateInput').disabled = false;
+            document.getElementById('sendPrivateBtn').disabled = false;
+            document.getElementById('audioCallBtn').style.display = 'flex';
+            document.getElementById('privateBadge').style.display = 'none';
+            document.getElementById('privateBadge').textContent = '0';
+            showView('private');
+            
+            if (useFirebase && firebaseInitialized) {
+                renderPrivateMessages();
+            } else {
+                renderPrivateMessages();
+            }
+            
+            document.getElementById('searchUsers').value = '';
+            document.getElementById('searchResults').innerHTML = '';
+            closeMobileMenu();
+        }
+
         // ================================================
-        // 10. ГАЛЕРЕЯ
+        // 12. СИНХРОНИЗАЦИЯ ПОЛЬЗОВАТЕЛЕЙ
+        // ================================================
+        function syncUsersToFirebase() {
+            if (usersRef) {
+                usersRef.set(appUsers).catch(err => console.log('Ошибка синхронизации пользователей:', err));
+            }
+        }
+
+        function loadUsersFromFirebase() {
+            if (!usersRef) return;
+            usersRef.on('value', (snapshot) => {
+                const data = snapshot.val();
+                if (data) {
+                    appUsers = data;
+                    saveUsers();
+                    searchUsers();
+                }
+            });
+        }
+
+        // ================================================
+        // 13. ГАЛЕРЕЯ
         // ================================================
         function renderGallery() {
             let images = JSON.parse(localStorage.getItem('roma_images') || '[]');
@@ -1674,7 +1916,7 @@
         }
 
         // ================================================
-        // 11. НАВИГАЦИЯ
+        // 14. НАВИГАЦИЯ
         // ================================================
         function showView(viewId) {
             document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
@@ -1698,7 +1940,34 @@
         }
 
         // ================================================
-        // 12. ИНИЦИАЛИЗАЦИЯ
+        // 15. ФУНКЦИИ ДЛЯ ОТПРАВКИ ФОТО
+        // ================================================
+        function sendChatImage(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                sendMessageToChat('📷 Фото', e.target.result);
+                showNotification('Фото отправлено! 📸', 'success');
+            };
+            reader.readAsDataURL(file);
+            event.target.value = '';
+        }
+
+        function sendPrivateImage(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                sendPrivateMessage('📷 Фото', e.target.result);
+                showNotification('Фото отправлено! 📸', 'success');
+            };
+            reader.readAsDataURL(file);
+            event.target.value = '';
+        }
+
+        // ================================================
+        // 16. ИНИЦИАЛИЗАЦИЯ
         // ================================================
         function initEvents() {
             document.querySelectorAll('.nav-item').forEach(item => {
@@ -1794,18 +2063,23 @@
                     currentUser = user;
                     loadUserData();
                     showView('chat');
-                    renderChatMessages();
-                    renderPrivateMessages();
+                    if (useFirebase && firebaseInitialized) {
+                        loadUsersFromFirebase();
+                        listenFirebaseMessages();
+                        listenFirebasePrivateMessages();
+                    } else {
+                        renderChatMessages();
+                        renderPrivateMessages();
+                    }
                 } else showAuthModal();
             } else showAuthModal();
         }
 
         // ================================================
-        // 13. ЗАПУСК
+        // 17. ЗАПУСК
         // ================================================
         document.addEventListener('DOMContentLoaded', function() {
             initData();
-            loadPrivateMessages();
             initEvents();
             checkAuth();
             renderGallery();
@@ -1814,6 +2088,14 @@
         window.addEventListener('beforeunload', () => {
             if (currentUser) localStorage.setItem('roma_current_user', JSON.stringify(currentUser));
         });
+
+        console.log('📱 Мессенджер Roma запущен!');
+        if (useFirebase && firebaseInitialized) {
+            console.log('🔥 Режим: Firebase (сообщения видны всем)');
+        } else {
+            console.log('💾 Режим: localStorage (сообщения только на этом устройстве)');
+            console.log('⚠️ Для общего чата настройте Firebase в firebaseConfig');
+        }
     </script>
 </body>
 </html>
