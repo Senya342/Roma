@@ -35,7 +35,7 @@
             background: #f5f7fa;
         }
 
-        /* ===== САЙДБАР ===== */
+        /* Сайдбар */
         .sidebar {
             width: 250px;
             background: white;
@@ -47,7 +47,6 @@
             z-index: 100;
             height: 100%;
             overflow: hidden;
-            position: relative;
         }
 
         .sidebar-header {
@@ -183,7 +182,7 @@
         .user-list-item .online-status { font-size: 10px; color: #999; }
         .user-list-item .online-status.online { color: #4caf50; }
 
-        /* ===== ОСНОВНОЙ КОНТЕНТ ===== */
+        /* Основной контент */
         .main-content {
             flex: 1;
             display: flex;
@@ -204,7 +203,7 @@
         }
         .view.active { display: flex; }
 
-        /* ===== ЧАТ ===== */
+        /* Чат */
         .chat-header {
             padding: 10px 14px;
             background: white;
@@ -273,7 +272,30 @@
             display: flex;
             gap: 8px;
             animation: fadeIn 0.2s ease;
+            position: relative;
         }
+        .message:hover .message-actions { display: flex; }
+        .message-actions {
+            display: none;
+            position: absolute;
+            right: 0;
+            top: -10px;
+            background: white;
+            border-radius: 8px;
+            padding: 2px 6px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            gap: 4px;
+        }
+        .message.own .message-actions { right: auto; left: 0; }
+        .message-actions button {
+            background: none;
+            border: none;
+            cursor: pointer;
+            padding: 2px 4px;
+            font-size: 12px;
+            color: #e74c3c;
+        }
+
         @keyframes fadeIn {
             from { opacity: 0; transform: translateY(6px); }
             to { opacity: 1; transform: translateY(0); }
@@ -427,7 +449,7 @@
             text-overflow: ellipsis;
         }
 
-        /* ===== ГАЛЕРЕЯ ===== */
+        /* Галерея */
         .gallery-header {
             padding: 10px 14px;
             background: white;
@@ -494,7 +516,7 @@
         .gallery-item-title { font-weight: 600; font-size: 12px; }
         .gallery-item-stats { display: flex; gap: 8px; font-size: 10px; color: #7f8c8d; margin-top: 2px; }
 
-        /* ===== ПРОФИЛЬ ===== */
+        /* Профиль */
         .profile-content {
             padding: 15px;
             overflow-y: auto;
@@ -562,7 +584,7 @@
         }
         .edit-profile-btn:active { transform: scale(0.97); }
 
-        /* ===== МОДАЛЬНЫЕ ОКНА ===== */
+        /* Модальные окна */
         .modal {
             display: none;
             position: fixed;
@@ -713,7 +735,7 @@
         .modal-info h3 { font-size: 17px; margin-bottom: 6px; }
         .modal-info p { color: #555; font-size: 14px; }
 
-        /* ===== УВЕДОМЛЕНИЯ ===== */
+        /* Уведомления */
         .notification {
             position: fixed;
             top: 12px;
@@ -740,7 +762,7 @@
         .notification.error { background: rgba(231, 76, 60, 0.92); }
         .notification.info { background: rgba(30, 136, 229, 0.92); }
 
-        /* ===== МОБИЛЬНОЕ МЕНЮ ===== */
+        /* Мобильное меню */
         .mobile-overlay {
             display: none;
             position: fixed;
@@ -755,7 +777,7 @@
         }
         .mobile-overlay.active { display: block; }
 
-        /* ===== АДАПТАЦИЯ ДЛЯ ТЕЛЕФОНА ===== */
+        /* Адаптация */
         @media (max-width: 768px) {
             .sidebar {
                 position: fixed;
@@ -822,11 +844,9 @@
             .chat-input-area .file-btn { width: 22px; height: 22px; font-size: 12px; }
         }
 
-        /* Убираем скролл в инпутах */
         .chat-input-area input::-webkit-scrollbar { display: none; }
         .chat-input-area input { scrollbar-width: none; }
 
-        /* Стили для скролла */
         ::-webkit-scrollbar { width: 4px; }
         ::-webkit-scrollbar-track { background: transparent; }
         ::-webkit-scrollbar-thumb { background: #c1c1c1; border-radius: 4px; }
@@ -835,10 +855,8 @@
 </head>
 <body>
     <div id="app">
-        <!-- Мобильное затемнение -->
         <div class="mobile-overlay" id="mobileOverlay" onclick="closeMobileMenu()"></div>
 
-        <!-- Сайдбар -->
         <aside class="sidebar" id="sidebar">
             <div class="sidebar-header">
                 <h2>Roma</h2>
@@ -883,9 +901,7 @@
             </div>
         </aside>
 
-        <!-- Основной контент -->
         <main class="main-content">
-            <!-- Общий чат -->
             <div id="chatView" class="view active">
                 <div class="chat-header">
                     <div class="chat-left">
@@ -916,7 +932,6 @@
                 </div>
             </div>
 
-            <!-- Личные сообщения -->
             <div id="privateView" class="view">
                 <div class="chat-header">
                     <div class="chat-left">
@@ -949,7 +964,6 @@
                 </div>
             </div>
 
-            <!-- Лента -->
             <div id="galleryView" class="view">
                 <div class="gallery-header">
                     <h2><i class="fas fa-images"></i> Лента</h2>
@@ -966,7 +980,6 @@
                 <div class="gallery-grid" id="galleryGrid"></div>
             </div>
 
-            <!-- Профиль -->
             <div id="profileView" class="view">
                 <div class="gallery-header">
                     <h2><i class="fas fa-user-circle"></i> Профиль</h2>
@@ -976,7 +989,7 @@
         </main>
     </div>
 
-    <!-- Модальные окна -->
+    <!-- Модалки -->
     <div id="imageModal" class="modal">
         <div class="modal-content">
             <span class="close" onclick="document.getElementById('imageModal').classList.remove('active')">&times;</span>
@@ -1065,7 +1078,7 @@
         // 1. НАСТРОЙКИ FIREBASE
         // ================================================
         const firebaseConfig = {
-            apiKey: "AIzaSyDU3iCDKldEm-FrLtWbgaESeN1Pew6NOBg",
+         apiKey: "AIzaSyDU3iCDKldEm-FrLtWbgaESeN1Pew6NOBg",
             authDomain: "romamessenger-bbc6a.firebaseapp.com",
             databaseURL: "https://romamessenger-bbc6a-default-rtdb.firebaseio.com",
             projectId: "romamessenger-bbc6a",
@@ -1084,7 +1097,6 @@
         let currentSort = 'newest';
         let privateChatWith = null;
         let appUsers = [];
-        let appMessages = [];
 
         const clanColors = {
             'Ranalda': '#ffd700',
@@ -1321,23 +1333,37 @@
         }
 
         // ================================================
-        // 8. ОБЩИЙ ЧАТ
+        // 8. ОБЩИЙ ЧАТ (С ИСПРАВЛЕННОЙ ОТПРАВКОЙ)
         // ================================================
         const chatMessagesRef = database.ref('chatMessages');
 
         function sendMessageToChat(text, imageData = null) {
             if (!text.trim() && !imageData) return;
-            if (!currentUser) return;
-            chatMessagesRef.push({
+            if (!currentUser) {
+                showNotification('Сначала войдите в аккаунт!', 'error');
+                return;
+            }
+            
+            const messageData = {
                 userId: currentUser.id,
                 username: currentUser.username,
-                avatar: currentUser.avatar,
+                avatar: currentUser.avatar || getAnonymousAvatar(currentUser.username),
                 text: text.trim() || '',
                 image: imageData || null,
                 timestamp: firebase.database.ServerValue.TIMESTAMP,
                 deleted: false
-            });
-            document.getElementById('chatInput').value = '';
+            };
+            
+            // Отправляем в Firebase
+            chatMessagesRef.push(messageData)
+                .then(() => {
+                    document.getElementById('chatInput').value = '';
+                    showNotification('Сообщение отправлено!', 'success');
+                })
+                .catch((err) => {
+                    console.error('Ошибка отправки:', err);
+                    showNotification('Ошибка отправки сообщения', 'error');
+                });
         }
 
         function sendChatImage(event) {
@@ -1358,7 +1384,16 @@
                 if (data) {
                     const msgs = Object.entries(data).map(([k,v]) => ({ ...v, firebaseKey: k }));
                     renderChatMessages(msgs);
-                } else renderChatMessages([]);
+                } else {
+                    renderChatMessages([]);
+                }
+            }, (error) => {
+                console.error('Ошибка получения сообщений:', error);
+                // Пробуем загрузить из localStorage если Firebase не работает
+                const localMsgs = localStorage.getItem('roma_chat_cache');
+                if (localMsgs) {
+                    renderChatMessages(JSON.parse(localMsgs));
+                }
             });
         }
 
@@ -1366,6 +1401,15 @@
             messages.sort((a, b) => a.timestamp - b.timestamp);
             const container = document.getElementById('chatMessages');
             if (!container) return;
+            
+            if (messages.length === 0) {
+                container.innerHTML = '<div style="text-align:center; padding:30px 15px; color:#999; font-size:13px;">Нет сообщений. Напишите первое! 💬</div>';
+                return;
+            }
+            
+            // Кешируем в localStorage для оффлайн доступа
+            localStorage.setItem('roma_chat_cache', JSON.stringify(messages));
+            
             const html = messages.map(msg => {
                 if (msg.deleted) return '';
                 const isOwn = msg.userId === currentUser?.id;
@@ -1374,6 +1418,7 @@
                 if (msg.image) content += `<img src="${msg.image}" class="message-image" onclick="openImagePreview('${msg.image}')">`;
                 if (msg.text) content += `<div class="message-text">${escapeHtml(msg.text)}</div>`;
                 const userId = msg.userId || '';
+                
                 return `
                     <div class="message ${isOwn ? 'own' : ''}">
                         <img src="${avatar}" class="message-avatar" onclick="${userId ? `openUserProfile('${userId}')` : ''}">
@@ -1384,18 +1429,26 @@
                             </div>
                             ${content}
                         </div>
-                        ${isOwn ? `<div style="position:absolute; right:8px; top:-8px; display:none;" class="msg-actions"><button onclick="deleteChatMessage('${msg.firebaseKey}')" style="background:white; border:none; border-radius:6px; padding:2px 6px; cursor:pointer; box-shadow:0 2px 6px rgba(0,0,0,0.1); font-size:12px; color:#e74c3c;"><i class="fas fa-trash"></i></button></div>` : ''}
+                        ${isOwn ? `
+                            <div class="message-actions">
+                                <button onclick="deleteChatMessage('${msg.firebaseKey}')" title="Удалить">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </div>
+                        ` : ''}
                     </div>
                 `;
             }).filter(h => h !== '').join('');
-            container.innerHTML = html || '<div style="text-align:center; padding:30px 15px; color:#999; font-size:13px;">Нет сообщений. Напишите первое! 💬</div>';
+            
+            container.innerHTML = html;
             container.scrollTop = container.scrollHeight;
         }
 
         function deleteChatMessage(key) {
             if (!confirm('Удалить это сообщение?')) return;
-            chatMessagesRef.child(key).update({ deleted: true, text: 'Сообщение удалено', image: null });
-            showNotification('Сообщение удалено', 'info');
+            chatMessagesRef.child(key).update({ deleted: true, text: 'Сообщение удалено', image: null })
+                .then(() => showNotification('Сообщение удалено', 'info'))
+                .catch(() => showNotification('Ошибка удаления', 'error'));
         }
 
         // ================================================
@@ -1430,13 +1483,15 @@
                 from: currentUser.id,
                 to: privateChatWith,
                 username: currentUser.username,
-                avatar: currentUser.avatar,
+                avatar: currentUser.avatar || getAnonymousAvatar(currentUser.username),
                 text: text.trim() || '',
                 image: imageData || null,
                 timestamp: firebase.database.ServerValue.TIMESTAMP,
                 deleted: false
-            });
-            document.getElementById('privateInput').value = '';
+            }).then(() => {
+                document.getElementById('privateInput').value = '';
+                showNotification('Сообщение отправлено!', 'success');
+            }).catch(() => showNotification('Ошибка отправки', 'error'));
         }
 
         function sendPrivateImage(event) {
@@ -1505,7 +1560,13 @@
                                 </div>
                                 ${content}
                             </div>
-                            ${isOwn ? `<div style="position:absolute; right:8px; top:-8px; display:none;" class="msg-actions"><button onclick="deletePrivateMessage('${msg.firebaseKey}', '${chatId}')" style="background:white; border:none; border-radius:6px; padding:2px 6px; cursor:pointer; box-shadow:0 2px 6px rgba(0,0,0,0.1); font-size:12px; color:#e74c3c;"><i class="fas fa-trash"></i></button></div>` : ''}
+                            ${isOwn ? `
+                                <div class="message-actions">
+                                    <button onclick="deletePrivateMessage('${msg.firebaseKey}', '${chatId}')" title="Удалить">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
+                                </div>
+                            ` : ''}
                         </div>
                     `;
                 }).filter(h => h !== '').join('');
@@ -1516,8 +1577,9 @@
 
         function deletePrivateMessage(key, chatId) {
             if (!confirm('Удалить это сообщение?')) return;
-            privateMessagesRef.child(chatId).child(key).update({ deleted: true, text: 'Сообщение удалено', image: null });
-            showNotification('Сообщение удалено', 'info');
+            privateMessagesRef.child(chatId).child(key).update({ deleted: true, text: 'Сообщение удалено', image: null })
+                .then(() => showNotification('Сообщение удалено', 'info'))
+                .catch(() => showNotification('Ошибка удаления', 'error'));
         }
 
         // ================================================
@@ -1677,7 +1739,7 @@
 
             document.getElementById('sendMessageBtn').addEventListener('click', () => {
                 const input = document.getElementById('chatInput');
-                if (input.value.trim()) { sendMessageToChat(input.value); input.value = ''; }
+                if (input.value.trim()) { sendMessageToChat(input.value); }
             });
             document.getElementById('chatInput').addEventListener('keypress', (e) => {
                 if (e.key === 'Enter') { e.preventDefault(); document.getElementById('sendMessageBtn').click(); }
@@ -1685,7 +1747,7 @@
 
             document.getElementById('sendPrivateBtn').addEventListener('click', () => {
                 const input = document.getElementById('privateInput');
-                if (input.value.trim() && privateChatWith) { sendPrivateMessage(input.value); input.value = ''; }
+                if (input.value.trim() && privateChatWith) { sendPrivateMessage(input.value); }
             });
             document.getElementById('privateInput').addEventListener('keypress', (e) => {
                 if (e.key === 'Enter') { e.preventDefault(); document.getElementById('sendPrivateBtn').click(); }
