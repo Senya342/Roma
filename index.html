@@ -1068,45 +1068,23 @@
         </div>
     </div>
 
-    <!-- Firebase SDK -->
-    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
+    <!-- Font Awesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
     <script>
         // ================================================
-        // 1. НАСТРОЙКИ FIREBASE
-        // ================================================
-        const firebaseConfig = {
-         apiKey: "AIzaSyDU3iCDKldEm-FrLtWbgaESeN1Pew6NOBg",
-            authDomain: "romamessenger-bbc6a.firebaseapp.com",
-            databaseURL: "https://romamessenger-bbc6a-default-rtdb.firebaseio.com",
-            projectId: "romamessenger-bbc6a",
-            storageBucket: "romamessenger-bbc6a.firebasestorage.app",
-            messagingSenderId: "91095345562",
-            appId: "1:91095345562:web:51862dac24662cee2cb223"
-        };
-        firebase.initializeApp(firebaseConfig);
-        const database = firebase.database();
-
-        // ================================================
-        // 2. ДАННЫЕ
+        // 1. ДАННЫЕ (ПОЛНОСТЬЮ НА LOCALSTORAGE)
         // ================================================
         let currentUser = null;
         let currentImageView = null;
         let currentSort = 'newest';
         let privateChatWith = null;
         let appUsers = [];
+        let chatMessages = [];
 
-        const clanColors = {
-            'Ranalda': '#ffd700',
-            'Foplouu': '#9b59b6',
-            'GGhost': '#2ecc71',
-            'Senya': '#e74c3c',
-            'HZ': '#34495e',
-            'Kolibri': '#f39c12'
-        };
-
+        // ================================================
+        // 2. ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ
+        // ================================================
         function getColorFromName(name) {
             const colors = ['#e74c3c','#3498db','#2ecc71','#f39c12','#9b59b6','#1abc9c','#e67e22','#e84393','#00b894','#6c5ce7'];
             let hash = 0;
@@ -1150,11 +1128,29 @@
         // ================================================
         function initData() {
             let users = localStorage.getItem('roma_users');
-            if (!users) { localStorage.setItem('roma_users', JSON.stringify([])); appUsers = []; }
-            else appUsers = JSON.parse(users);
+            if (!users) { 
+                localStorage.setItem('roma_users', JSON.stringify([])); 
+                appUsers = []; 
+            } else {
+                appUsers = JSON.parse(users);
+            }
+            
+            let messages = localStorage.getItem('roma_chat_messages');
+            if (!messages) {
+                localStorage.setItem('roma_chat_messages', JSON.stringify([]));
+                chatMessages = [];
+            } else {
+                chatMessages = JSON.parse(messages);
+            }
         }
 
-        function saveUsers() { localStorage.setItem('roma_users', JSON.stringify(appUsers)); }
+        function saveUsers() { 
+            localStorage.setItem('roma_users', JSON.stringify(appUsers)); 
+        }
+        
+        function saveMessages() {
+            localStorage.setItem('roma_chat_messages', JSON.stringify(chatMessages));
+        }
 
         function showAuthModal() { document.getElementById('authModal').classList.add('active'); }
         function hideAuthModal() { document.getElementById('authModal').classList.remove('active'); }
@@ -1172,8 +1168,8 @@
                     hideAuthModal();
                     loadUserData();
                     showView('chat');
-                    listenMessages();
-                    listenPrivateMessages();
+                    renderChatMessages();
+                    renderPrivateMessages();
                     showNotification('Добро пожаловать в Roma!', 'success');
                     closeMobileMenu();
                 } else showNotification('Неверное имя или пароль', 'error');
@@ -1200,8 +1196,8 @@
                 hideAuthModal();
                 loadUserData();
                 showView('chat');
-                listenMessages();
-                listenPrivateMessages();
+                renderChatMessages();
+                renderPrivateMessages();
                 showNotification('Регистрация успешна!', 'success');
                 closeMobileMenu();
             }
@@ -1333,37 +1329,34 @@
         }
 
         // ================================================
-        // 8. ОБЩИЙ ЧАТ (С ИСПРАВЛЕННОЙ ОТПРАВКОЙ)
+        // 8. ОБЩИЙ ЧАТ (РАБОТАЕТ НА LOCALSTORAGE)
         // ================================================
-        const chatMessagesRef = database.ref('chatMessages');
-
         function sendMessageToChat(text, imageData = null) {
-            if (!text.trim() && !imageData) return;
+            if (!text.trim() && !imageData) {
+                showNotification('Введите сообщение!', 'error');
+                return;
+            }
             if (!currentUser) {
                 showNotification('Сначала войдите в аккаунт!', 'error');
                 return;
             }
             
             const messageData = {
+                id: Date.now().toString() + Math.random().toString(36).substr(2, 5),
                 userId: currentUser.id,
                 username: currentUser.username,
                 avatar: currentUser.avatar || getAnonymousAvatar(currentUser.username),
                 text: text.trim() || '',
                 image: imageData || null,
-                timestamp: firebase.database.ServerValue.TIMESTAMP,
+                timestamp: Date.now(),
                 deleted: false
             };
             
-            // Отправляем в Firebase
-            chatMessagesRef.push(messageData)
-                .then(() => {
-                    document.getElementById('chatInput').value = '';
-                    showNotification('Сообщение отправлено!', 'success');
-                })
-                .catch((err) => {
-                    console.error('Ошибка отправки:', err);
-                    showNotification('Ошибка отправки сообщения', 'error');
-                });
+            chatMessages.push(messageData);
+            saveMessages();
+            document.getElementById('chatInput').value = '';
+            renderChatMessages();
+            showNotification('Сообщение отправлено! ✅', 'success');
         }
 
         function sendChatImage(event) {
@@ -1378,83 +1371,79 @@
             event.target.value = '';
         }
 
-        function listenMessages() {
-            chatMessagesRef.orderByChild('timestamp').limitToLast(100).on('value', (snapshot) => {
-                const data = snapshot.val();
-                if (data) {
-                    const msgs = Object.entries(data).map(([k,v]) => ({ ...v, firebaseKey: k }));
-                    renderChatMessages(msgs);
-                } else {
-                    renderChatMessages([]);
-                }
-            }, (error) => {
-                console.error('Ошибка получения сообщений:', error);
-                // Пробуем загрузить из localStorage если Firebase не работает
-                const localMsgs = localStorage.getItem('roma_chat_cache');
-                if (localMsgs) {
-                    renderChatMessages(JSON.parse(localMsgs));
-                }
-            });
-        }
-
-        function renderChatMessages(messages) {
-            messages.sort((a, b) => a.timestamp - b.timestamp);
+        function renderChatMessages() {
             const container = document.getElementById('chatMessages');
             if (!container) return;
+            
+            const messages = chatMessages.filter(msg => !msg.deleted);
             
             if (messages.length === 0) {
                 container.innerHTML = '<div style="text-align:center; padding:30px 15px; color:#999; font-size:13px;">Нет сообщений. Напишите первое! 💬</div>';
                 return;
             }
             
-            // Кешируем в localStorage для оффлайн доступа
-            localStorage.setItem('roma_chat_cache', JSON.stringify(messages));
-            
             const html = messages.map(msg => {
-                if (msg.deleted) return '';
                 const isOwn = msg.userId === currentUser?.id;
                 const avatar = msg.avatar || getAnonymousAvatar(msg.username);
                 let content = '';
                 if (msg.image) content += `<img src="${msg.image}" class="message-image" onclick="openImagePreview('${msg.image}')">`;
                 if (msg.text) content += `<div class="message-text">${escapeHtml(msg.text)}</div>`;
-                const userId = msg.userId || '';
                 
                 return `
                     <div class="message ${isOwn ? 'own' : ''}">
-                        <img src="${avatar}" class="message-avatar" onclick="${userId ? `openUserProfile('${userId}')` : ''}">
+                        <img src="${avatar}" class="message-avatar" onclick="${msg.userId ? `openUserProfile('${msg.userId}')` : ''}">
                         <div class="message-content">
                             <div class="message-header">
-                                <span class="message-name" onclick="${userId ? `openUserProfile('${userId}')` : ''}">${escapeHtml(msg.username)}</span>
+                                <span class="message-name" onclick="${msg.userId ? `openUserProfile('${msg.userId}')` : ''}">${escapeHtml(msg.username)}</span>
                                 <span class="message-time">${formatTime(msg.timestamp)}</span>
                             </div>
                             ${content}
                         </div>
                         ${isOwn ? `
                             <div class="message-actions">
-                                <button onclick="deleteChatMessage('${msg.firebaseKey}')" title="Удалить">
+                                <button onclick="deleteChatMessage('${msg.id}')" title="Удалить">
                                     <i class="fas fa-trash"></i>
                                 </button>
                             </div>
                         ` : ''}
                     </div>
                 `;
-            }).filter(h => h !== '').join('');
+            }).join('');
             
             container.innerHTML = html;
             container.scrollTop = container.scrollHeight;
         }
 
-        function deleteChatMessage(key) {
+        function deleteChatMessage(id) {
             if (!confirm('Удалить это сообщение?')) return;
-            chatMessagesRef.child(key).update({ deleted: true, text: 'Сообщение удалено', image: null })
-                .then(() => showNotification('Сообщение удалено', 'info'))
-                .catch(() => showNotification('Ошибка удаления', 'error'));
+            const msg = chatMessages.find(m => m.id === id);
+            if (msg) {
+                msg.deleted = true;
+                msg.text = 'Сообщение удалено';
+                msg.image = null;
+                saveMessages();
+                renderChatMessages();
+                showNotification('Сообщение удалено', 'info');
+            }
         }
 
         // ================================================
         // 9. ЛИЧНЫЕ СООБЩЕНИЯ
         // ================================================
-        const privateMessagesRef = database.ref('privateMessages');
+        let privateMessages = [];
+
+        function loadPrivateMessages() {
+            const saved = localStorage.getItem('roma_private_messages');
+            if (saved) {
+                privateMessages = JSON.parse(saved);
+            } else {
+                privateMessages = [];
+            }
+        }
+
+        function savePrivateMessages() {
+            localStorage.setItem('roma_private_messages', JSON.stringify(privateMessages));
+        }
 
         function startPrivateChat(userId) {
             if (!userId) { showNotification('Ошибка: пользователь не найден', 'error'); return; }
@@ -1476,22 +1465,29 @@
         }
 
         function sendPrivateMessage(text, imageData = null) {
-            if (!text.trim() && !imageData) return;
+            if (!text.trim() && !imageData) {
+                showNotification('Введите сообщение!', 'error');
+                return;
+            }
             if (!currentUser || !privateChatWith) return;
-            const chatId = [currentUser.id, privateChatWith].sort().join('_');
-            privateMessagesRef.child(chatId).push({
+            
+            const messageData = {
+                id: Date.now().toString() + Math.random().toString(36).substr(2, 5),
                 from: currentUser.id,
                 to: privateChatWith,
                 username: currentUser.username,
                 avatar: currentUser.avatar || getAnonymousAvatar(currentUser.username),
                 text: text.trim() || '',
                 image: imageData || null,
-                timestamp: firebase.database.ServerValue.TIMESTAMP,
+                timestamp: Date.now(),
                 deleted: false
-            }).then(() => {
-                document.getElementById('privateInput').value = '';
-                showNotification('Сообщение отправлено!', 'success');
-            }).catch(() => showNotification('Ошибка отправки', 'error'));
+            };
+            
+            privateMessages.push(messageData);
+            savePrivateMessages();
+            document.getElementById('privateInput').value = '';
+            renderPrivateMessages();
+            showNotification('Сообщение отправлено! ✅', 'success');
         }
 
         function sendPrivateImage(event) {
@@ -1506,80 +1502,64 @@
             event.target.value = '';
         }
 
-        function listenPrivateMessages() {
-            privateMessagesRef.on('value', (snapshot) => {
-                const data = snapshot.val();
-                if (data) {
-                    let unread = 0;
-                    for (const [chatId, msgs] of Object.entries(data)) {
-                        const ids = chatId.split('_');
-                        if (ids.includes(currentUser.id)) {
-                            const otherId = ids.find(id => id !== currentUser.id);
-                            if (otherId && privateChatWith !== otherId) {
-                                const arr = Object.values(msgs);
-                                const last = arr[arr.length - 1];
-                                if (last && last.from === otherId && !last.deleted) unread++;
-                            }
-                        }
-                    }
-                    const badge = document.getElementById('privateBadge');
-                    if (unread > 0) { badge.textContent = unread; badge.style.display = 'block'; }
-                    else badge.style.display = 'none';
-                }
-                renderPrivateMessages();
-            });
-        }
-
         function renderPrivateMessages() {
             const container = document.getElementById('privateMessages');
             if (!container || !privateChatWith) return;
-            const chatId = [currentUser.id, privateChatWith].sort().join('_');
-            privateMessagesRef.child(chatId).orderByChild('timestamp').once('value', (snapshot) => {
-                const data = snapshot.val();
-                if (!data) {
-                    container.innerHTML = '<div style="text-align:center; padding:30px 15px; color:#999; font-size:13px;">Нет сообщений. Напишите первое! 💬</div>';
-                    return;
-                }
-                const msgs = Object.entries(data).map(([k,v]) => ({ ...v, firebaseKey: k }));
-                msgs.sort((a,b) => a.timestamp - b.timestamp);
-                const html = msgs.map(msg => {
-                    if (msg.deleted) return '';
-                    const isOwn = msg.from === currentUser.id;
-                    const avatar = msg.avatar || getAnonymousAvatar(msg.username);
-                    let content = '';
-                    if (msg.image) content += `<img src="${msg.image}" class="message-image" onclick="openImagePreview('${msg.image}')">`;
-                    if (msg.text) content += `<div class="message-text">${escapeHtml(msg.text)}</div>`;
-                    const userId = msg.from || '';
-                    return `
-                        <div class="message ${isOwn ? 'own' : ''}">
-                            <img src="${avatar}" class="message-avatar" onclick="${userId ? `openUserProfile('${userId}')` : ''}">
-                            <div class="message-content">
-                                <div class="message-header">
-                                    <span class="message-name" onclick="${userId ? `openUserProfile('${userId}')` : ''}">${escapeHtml(msg.username)}</span>
-                                    <span class="message-time">${formatTime(msg.timestamp)}</span>
-                                </div>
-                                ${content}
+            
+            const msgs = privateMessages.filter(m => 
+                !m.deleted && 
+                ((m.from === currentUser.id && m.to === privateChatWith) || 
+                 (m.from === privateChatWith && m.to === currentUser.id))
+            );
+            
+            if (msgs.length === 0) {
+                container.innerHTML = '<div style="text-align:center; padding:30px 15px; color:#999; font-size:13px;">Нет сообщений. Напишите первое! 💬</div>';
+                return;
+            }
+            
+            const html = msgs.map(msg => {
+                const isOwn = msg.from === currentUser.id;
+                const avatar = msg.avatar || getAnonymousAvatar(msg.username);
+                let content = '';
+                if (msg.image) content += `<img src="${msg.image}" class="message-image" onclick="openImagePreview('${msg.image}')">`;
+                if (msg.text) content += `<div class="message-text">${escapeHtml(msg.text)}</div>`;
+                
+                return `
+                    <div class="message ${isOwn ? 'own' : ''}">
+                        <img src="${avatar}" class="message-avatar" onclick="${msg.from ? `openUserProfile('${msg.from}')` : ''}">
+                        <div class="message-content">
+                            <div class="message-header">
+                                <span class="message-name" onclick="${msg.from ? `openUserProfile('${msg.from}')` : ''}">${escapeHtml(msg.username)}</span>
+                                <span class="message-time">${formatTime(msg.timestamp)}</span>
                             </div>
-                            ${isOwn ? `
-                                <div class="message-actions">
-                                    <button onclick="deletePrivateMessage('${msg.firebaseKey}', '${chatId}')" title="Удалить">
-                                        <i class="fas fa-trash"></i>
-                                    </button>
-                                </div>
-                            ` : ''}
+                            ${content}
                         </div>
-                    `;
-                }).filter(h => h !== '').join('');
-                container.innerHTML = html;
-                container.scrollTop = container.scrollHeight;
-            });
+                        ${isOwn ? `
+                            <div class="message-actions">
+                                <button onclick="deletePrivateMessage('${msg.id}')" title="Удалить">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </div>
+                        ` : ''}
+                    </div>
+                `;
+            }).join('');
+            
+            container.innerHTML = html;
+            container.scrollTop = container.scrollHeight;
         }
 
-        function deletePrivateMessage(key, chatId) {
+        function deletePrivateMessage(id) {
             if (!confirm('Удалить это сообщение?')) return;
-            privateMessagesRef.child(chatId).child(key).update({ deleted: true, text: 'Сообщение удалено', image: null })
-                .then(() => showNotification('Сообщение удалено', 'info'))
-                .catch(() => showNotification('Ошибка удаления', 'error'));
+            const msg = privateMessages.find(m => m.id === id);
+            if (msg) {
+                msg.deleted = true;
+                msg.text = 'Сообщение удалено';
+                msg.image = null;
+                savePrivateMessages();
+                renderPrivateMessages();
+                showNotification('Сообщение удалено', 'info');
+            }
         }
 
         // ================================================
@@ -1739,7 +1719,11 @@
 
             document.getElementById('sendMessageBtn').addEventListener('click', () => {
                 const input = document.getElementById('chatInput');
-                if (input.value.trim()) { sendMessageToChat(input.value); }
+                if (input.value.trim()) { 
+                    sendMessageToChat(input.value); 
+                } else {
+                    showNotification('Введите сообщение!', 'error');
+                }
             });
             document.getElementById('chatInput').addEventListener('keypress', (e) => {
                 if (e.key === 'Enter') { e.preventDefault(); document.getElementById('sendMessageBtn').click(); }
@@ -1747,7 +1731,11 @@
 
             document.getElementById('sendPrivateBtn').addEventListener('click', () => {
                 const input = document.getElementById('privateInput');
-                if (input.value.trim() && privateChatWith) { sendPrivateMessage(input.value); }
+                if (input.value.trim() && privateChatWith) { 
+                    sendPrivateMessage(input.value); 
+                } else {
+                    showNotification('Введите сообщение!', 'error');
+                }
             });
             document.getElementById('privateInput').addEventListener('keypress', (e) => {
                 if (e.key === 'Enter') { e.preventDefault(); document.getElementById('sendPrivateBtn').click(); }
@@ -1806,8 +1794,8 @@
                     currentUser = user;
                     loadUserData();
                     showView('chat');
-                    listenMessages();
-                    listenPrivateMessages();
+                    renderChatMessages();
+                    renderPrivateMessages();
                 } else showAuthModal();
             } else showAuthModal();
         }
@@ -1817,6 +1805,7 @@
         // ================================================
         document.addEventListener('DOMContentLoaded', function() {
             initData();
+            loadPrivateMessages();
             initEvents();
             checkAuth();
             renderGallery();
